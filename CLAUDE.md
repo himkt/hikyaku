@@ -34,6 +34,7 @@ These files are the authoritative reference. Always verify design decisions and 
 A2A-native message broker + agent registry for coding agents.
 
 - **Design document**: `design-docs/a2a-registry-broker/design-doc.md` (Status: Approved)
+- **Design document**: `design-docs/access-control/design-doc.md` — Tenant isolation via shared API key (Status: Approved)
 - **Monorepo structure** (uv workspace):
   - `registry/` — `hikyaku-registry` (FastAPI + Redis + a2a-sdk)
   - `client/` — `hikyaku-client` (click + httpx + a2a-sdk)

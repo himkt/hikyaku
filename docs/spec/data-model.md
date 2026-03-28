@@ -6,9 +6,10 @@ All core data structures — `Task`, `Message`, `Part`, `Artifact`, `AgentCard`,
 
 | Key Pattern | Type | Description | TTL |
 |---|---|---|---|
-| `agent:{agent_id}` | Hash | Agent metadata + serialized Agent Card | None |
-| `apikey:{sha256(key)}` | String | Maps hashed API key → agent_id | None |
-| `agents:active` | Set | Set of active agent_id UUIDs | None |
+| `agent:{agent_id}` | Hash | Agent metadata + serialized Agent Card. The `api_key_hash` field serves as `tenant_id`. | None |
+| ~~`apikey:{sha256(key)}`~~ | ~~String~~ | ~~Maps hashed API key → agent_id~~ | **Removed** — replaced by tenant set membership check. Multiple agents now share one API key, so this 1:1 mapping is no longer valid. |
+| `agents:active` | Set | Set of active agent_id UUIDs. **Retained for cleanup scanning only** — application queries use tenant sets instead. | None |
+| `tenant:{api_key_hash}:agents` | Set | **New.** Set of active agent_ids belonging to this tenant. Updated on registration (SADD) and deregistration (SREM). This is the canonical source for tenant membership. | None |
 | `task:{task_id}` | Hash | Full A2A Task JSON + routing metadata | None |
 | `tasks:ctx:{context_id}` | Sorted Set | task_ids scored by status timestamp (updated on state change) | None |
 | `tasks:sender:{agent_id}` | Set | task_ids created by this sender | None |
@@ -53,14 +54,18 @@ This enables efficient inbox queries:
 - Status filtering is applied after retrieval from the sorted set
 - Pagination uses `pageSize` with cursor-based offset
 
+## Tenant Lifecycle
+
+Tenants are ephemeral. When the last agent in a tenant deregisters, the `tenant:{api_key_hash}:agents` set becomes empty. At that point, no new agent can join using that API key (the join flow rejects empty/missing tenant sets). The API key effectively dies with the last agent. To re-create the tenant, an agent must register without auth to get a fresh API key.
+
 ## Task Visibility Rules
 
 | Caller | Can Access |
 |---|---|
-| Recipient (API key maps to `to_agent_id`) | `ListTasks` by contextId (= their agent_id), `GetTask`, `SendMessage` (ACK) |
-| Sender (API key maps to `from_agent_id`) | `GetTask` by known taskId, `CancelTask` |
+| Recipient (same-tenant agent matching `to_agent_id`) | `ListTasks` by contextId (= their agent_id), `GetTask`, `SendMessage` (ACK) |
+| Sender (same-tenant agent matching `from_agent_id`) | `GetTask` by known taskId, `CancelTask` |
 
-`ListTasks` returns only tasks where the authenticated agent is the recipient (contextId match). If the provided `contextId` does not match the authenticated agent's ID, the Broker returns an empty task list (no error — consistent with A2A's rule that servers MUST NOT reveal existence of unauthorized resources). Senders track their tasks by the taskId returned from SendMessage.
+`ListTasks` enforces that `contextId` must equal the caller's `agent_id`. If a different `contextId` is provided, the Broker returns an error. This prevents inbox snooping — even within the same tenant. `GetTask` verifies that the task's `from_agent_id` or `to_agent_id` belongs to the caller's tenant; cross-tenant lookups return "not found".
 
 ## Deregistered Agent Cleanup
 

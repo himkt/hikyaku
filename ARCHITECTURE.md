@@ -1,28 +1,51 @@
 # Hikyaku — Architecture
 
-An A2A-native message broker and agent registry for coding agents. Enables ephemeral agents (Claude Code, CI/CD runners, etc.) to communicate via unicast and broadcast messaging using standard A2A protocol operations.
+An A2A-native message broker and agent registry for coding agents. Enables ephemeral agents (Claude Code, CI/CD runners, etc.) to communicate via unicast and broadcast messaging using standard A2A protocol operations. Agents are organized into **tenants** via shared API keys — agents sharing the same key form a tenant and can discover and message each other; agents in different tenants are invisible to one another.
 
 ## Architecture Diagram
 
 ```
-┌─────────────┐                        ┌──────────────────────┐
-│   Agent A    │  A2A SendMessage       │      Broker          │
-│  (sender)    │ ────────────────────→  │                      │
-└─────────────┘  Authorization:         │  ┌────────────────┐  │
-                  Bearer <api_key>      │  │ A2A Server     │  │
-                                        │  │ (all ops)      │  │
-┌─────────────┐  A2A ListTasks          │  └───────┬────────┘  │
-│   Agent B    │ ←───────────────────── │          │            │
-│ (recipient)  │  A2A GetTask           │          ▼            │
-│              │  A2A SendMessage (ACK)  │  ┌────────────────┐  │
-│              │  A2A CancelTask         │  │ Redis          │  │
-└─────────────┘                         │  │ Task Store     │  │
-                                        │  │ Agent Store    │  │
-┌─────────────┐  GET /api/v1/agents     │  └────────────────┘  │
-│   Agent C    │ ←───────────────────── │                      │
-│ (discovery)  │                        └──────────────────────┘
-└─────────────┘
+         Tenant X (shared API key)              ┌──────────────────────────┐
+        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐           │         Broker           │
+                                                │                          │
+        │ ┌─────────────┐           │           │  ┌────────────────────┐  │
+          │   Agent A    │ SendMessage            │  │ A2A Server        │  │
+        │ │  (sender)    │──────────────────────→│  │ (tenant-scoped)   │  │
+          └─────────────┘ Authorization:          │  └────────┬─────────┘  │
+        │                  Bearer <api_key>      │           │             │
+                           X-Agent-Id: <id>       │           ▼             │
+        │ ┌─────────────┐           │           │  ┌────────────────────┐  │
+          │   Agent B    │ ListTasks              │  │ Redis              │  │
+        │ │ (recipient)  │←─────────────────────│  │ ┌────────────────┐ │  │
+          └─────────────┘           │           │  │ │ Agent Store    │ │  │
+        │                                       │  │ │ Task Store     │ │  │
+         ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            │  │ │ Tenant Sets    │ │  │
+                                                │  │ └────────────────┘ │  │
+         Tenant Y (different API key)           │  └────────────────────┘  │
+        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐           │                          │
+          ┌─────────────┐                       │                          │
+        │ │   Agent C    │ (isolated) │         │                          │
+          │ (discovery)  │                      │                          │
+        │ └─────────────┘             │         └──────────────────────────┘
+         ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
 ```
+
+## Tenant Isolation
+
+The API key serves as the tenant boundary. All agents sharing the same API key form a tenant. The `SHA-256(api_key)` hash is stored as `api_key_hash` in agent records and used as the `tenant_id`.
+
+**Authentication requires two headers on all requests (except registration)**:
+
+| Header | Purpose |
+|---|---|
+| `Authorization: Bearer <api_key>` | Authenticates the tenant |
+| `X-Agent-Id: <agent_id>` | Identifies the specific agent within the tenant |
+
+**Registration** has two flows:
+- **No `Authorization` header**: Creates a new tenant with a fresh API key
+- **With `Authorization: Bearer <api_key>`**: Joins an existing tenant
+
+**Isolation rules**: Every operation that reads or writes agent/task data enforces tenant boundaries. Cross-tenant requests always produce "not found" errors indistinguishable from the resource not existing.
 
 ## Two API Surfaces
 
@@ -35,13 +58,13 @@ An A2A-native message broker and agent registry for coding agents. Enables ephem
 |---|---|---|
 | `main.py` | `registry/src/hikyaku_registry/` | ASGI app: mount A2A + FastAPI |
 | `config.py` | `registry/src/hikyaku_registry/` | Settings via pydantic-settings |
-| `auth.py` | `registry/src/hikyaku_registry/` | API key auth (shared by REST + A2A) |
+| `auth.py` | `registry/src/hikyaku_registry/` | API key + X-Agent-Id auth, tenant membership verification (shared by REST + A2A) |
 | `redis_client.py` | `registry/src/hikyaku_registry/` | Redis connection pool |
 | `models.py` | `registry/src/hikyaku_registry/` | Pydantic models (Registry API) |
 | `executor.py` | `registry/src/hikyaku_registry/` | BrokerExecutor (A2A AgentExecutor) |
 | `task_store.py` | `registry/src/hikyaku_registry/` | RedisTaskStore (A2A TaskStore for Redis) |
 | `agent_card.py` | `registry/src/hikyaku_registry/` | Broker's own Agent Card definition |
-| `registry_store.py` | `registry/src/hikyaku_registry/` | Agent CRUD on Redis |
+| `registry_store.py` | `registry/src/hikyaku_registry/` | Agent CRUD on Redis (tenant-scoped) |
 | `api/registry.py` | `registry/src/hikyaku_registry/api/` | Registry API router |
 | `cli.py` | `client/src/hikyaku_client/` | click group + subcommands |
 | `api.py` | `client/src/hikyaku_client/` | Helper functions (httpx / a2a-sdk) |
