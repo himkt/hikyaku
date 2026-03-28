@@ -8,12 +8,16 @@ async def register_agent(
     name: str,
     description: str,
     skills: list[dict] | None = None,
+    api_key: str | None = None,
 ) -> dict:
     body = {"name": name, "description": description}
     if skills is not None:
         body["skills"] = skills
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     async with httpx.AsyncClient() as client:
-        resp = await client.post(f"{broker_url}/api/v1/agents", json=body)
+        resp = await client.post(f"{broker_url}/api/v1/agents", json=body, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
@@ -42,7 +46,10 @@ async def send_message(
         resp = await client.post(
             f"{broker_url}/",
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "X-Agent-Id": agent_id,
+            },
         )
         resp.raise_for_status()
         data = resp.json()
@@ -86,7 +93,10 @@ async def poll_tasks(
         resp = await client.post(
             f"{broker_url}/",
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "X-Agent-Id": agent_id,
+            },
         )
         resp.raise_for_status()
         data = resp.json()
@@ -121,7 +131,10 @@ async def ack_task(
         resp = await client.post(
             f"{broker_url}/",
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "X-Agent-Id": agent_id,
+            },
         )
         resp.raise_for_status()
         data = resp.json()
@@ -146,7 +159,10 @@ async def cancel_task(
         resp = await client.post(
             f"{broker_url}/",
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "X-Agent-Id": agent_id,
+            },
         )
         resp.raise_for_status()
         data = resp.json()
@@ -171,7 +187,10 @@ async def get_task(
         resp = await client.post(
             f"{broker_url}/",
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "X-Agent-Id": agent_id,
+            },
         )
         resp.raise_for_status()
         data = resp.json()
@@ -183,19 +202,23 @@ async def get_task(
 async def list_agents(
     broker_url: str,
     api_key: str,
+    caller_id: str | None = None,
     agent_id: str | None = None,
 ) -> list | dict:
+    headers = {"Authorization": f"Bearer {api_key}"}
+    if caller_id:
+        headers["X-Agent-Id"] = caller_id
     async with httpx.AsyncClient() as client:
         if agent_id:
             resp = await client.get(
                 f"{broker_url}/api/v1/agents/{agent_id}",
-                headers={"Authorization": f"Bearer {api_key}"},
+                headers=headers,
             )
             resp.raise_for_status()
             return resp.json()
         resp = await client.get(
             f"{broker_url}/api/v1/agents",
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers=headers,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -210,6 +233,9 @@ async def deregister_agent(
     async with httpx.AsyncClient() as client:
         resp = await client.delete(
             f"{broker_url}/api/v1/agents/{agent_id}",
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "X-Agent-Id": agent_id,
+            },
         )
         resp.raise_for_status()

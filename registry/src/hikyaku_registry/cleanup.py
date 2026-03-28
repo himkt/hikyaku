@@ -39,6 +39,11 @@ async def cleanup_expired_agents(
 
             agent_id = record.get("agent_id", key.split(":", 1)[1])
 
+            # Remove from tenant set
+            api_key_hash = record.get("api_key_hash")
+            if api_key_hash:
+                await redis.srem(f"tenant:{api_key_hash}:agents", agent_id)
+
             # Delete all tasks in the agent's context sorted set
             task_ids = await redis.zrange(f"tasks:ctx:{agent_id}", 0, -1)
             for task_id in task_ids:

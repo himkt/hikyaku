@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 from contextlib import asynccontextmanager
 
@@ -84,7 +85,7 @@ def _jsonrpc_error(
 
 
 async def _handle_send_message(
-    executor: BrokerExecutor, agent_id: str, params: dict
+    executor: BrokerExecutor, agent_id: str, tenant_id: str, params: dict
 ) -> dict:
     """Handle SendMessage JSON-RPC method."""
     message_data = params["message"]
@@ -102,7 +103,7 @@ async def _handle_send_message(
         task_id=message_data.get("taskId"),
     )
 
-    call_context = ServerCallContext(state={"agent_id": agent_id})
+    call_context = ServerCallContext(state={"agent_id": agent_id, "tenant_id": tenant_id})
     send_params = MessageSendParams(message=msg)
 
     context = RequestContext(
@@ -136,7 +137,12 @@ async def _handle_send_message(
     return {"task": _task_to_dict(last_task)}
 
 
-async def _handle_get_task(task_store: RedisTaskStore, params: dict) -> dict:
+async def _handle_get_task(
+    task_store: RedisTaskStore,
+    tenant_id: str,
+    registry_store: RegistryStore,
+    params: dict,
+) -> dict:
     """Handle GetTask JSON-RPC method."""
     task_id = params.get("id")
     if not task_id:
@@ -146,18 +152,27 @@ async def _handle_get_task(task_store: RedisTaskStore, params: dict) -> dict:
     if task is None:
         raise ValueError(f"Task {task_id} not found")
 
+    # Verify task belongs to caller's tenant
+    from_agent = await registry_store._redis.hget(f"task:{task_id}", "from_agent_id")
+    to_agent = await registry_store._redis.hget(f"task:{task_id}", "to_agent_id")
+
+    from_ok = from_agent and await registry_store.verify_agent_tenant(from_agent, tenant_id)
+    to_ok = to_agent and await registry_store.verify_agent_tenant(to_agent, tenant_id)
+    if not from_ok and not to_ok:
+        raise ValueError(f"Task {task_id} not found")
+
     return {"task": _task_to_dict(task)}
 
 
 async def _handle_cancel_task(
-    executor: BrokerExecutor, agent_id: str, params: dict
+    executor: BrokerExecutor, agent_id: str, tenant_id: str, params: dict
 ) -> dict:
     """Handle CancelTask JSON-RPC method."""
     task_id = params.get("id")
     if not task_id:
         raise ValueError("Missing task id")
 
-    call_context = ServerCallContext(state={"agent_id": agent_id})
+    call_context = ServerCallContext(state={"agent_id": agent_id, "tenant_id": tenant_id})
     context = RequestContext(
         task_id=task_id,
         call_context=call_context,
@@ -188,12 +203,15 @@ async def _handle_cancel_task(
 
 
 async def _handle_list_tasks(
-    task_store: RedisTaskStore, params: dict
+    task_store: RedisTaskStore, agent_id: str, params: dict
 ) -> dict:
     """Handle ListTasks JSON-RPC method."""
     context_id = params.get("contextId")
     if not context_id:
         raise ValueError("Missing contextId")
+
+    if context_id != agent_id:
+        raise ValueError("Forbidden: contextId does not match caller")
 
     status_filter = params.get("status")
     tasks = await task_store.list(context_id)
@@ -244,7 +262,7 @@ def create_app(redis=None) -> FastAPI:
     # JSON-RPC endpoint for A2A operations
     @app.post("/")
     async def jsonrpc_endpoint(request: Request):
-        # Authenticate
+        # Authenticate: extract Bearer token and X-Agent-Id header
         auth_header = request.headers.get("authorization", "")
         parts = auth_header.split(" ", 1)
         token = (
@@ -257,8 +275,18 @@ def create_app(redis=None) -> FastAPI:
                 status_code=401, content={"error": "Unauthorized"}
             )
 
-        agent_id = await registry_store.lookup_by_api_key(token)
-        if agent_id is None:
+        tenant_id = hashlib.sha256(token.encode()).hexdigest()
+        agent_id = request.headers.get("x-agent-id")
+        if not agent_id:
+            return JSONResponse(
+                status_code=401, content={"error": "Unauthorized"}
+            )
+
+        # Verify agent belongs to tenant
+        agent_key_hash = await registry_store._redis.hget(
+            f"agent:{agent_id}", "api_key_hash"
+        )
+        if agent_key_hash is None or agent_key_hash != tenant_id:
             return JSONResponse(
                 status_code=401, content={"error": "Unauthorized"}
             )
@@ -273,16 +301,20 @@ def create_app(redis=None) -> FastAPI:
         try:
             if method == "SendMessage":
                 result = await _handle_send_message(
-                    executor, agent_id, params
+                    executor, agent_id, tenant_id, params
                 )
             elif method == "GetTask":
-                result = await _handle_get_task(task_store, params)
+                result = await _handle_get_task(
+                    task_store, tenant_id, registry_store, params
+                )
             elif method == "CancelTask":
                 result = await _handle_cancel_task(
-                    executor, agent_id, params
+                    executor, agent_id, tenant_id, params
                 )
             elif method == "ListTasks":
-                result = await _handle_list_tasks(task_store, params)
+                result = await _handle_list_tasks(
+                    task_store, agent_id, params
+                )
             else:
                 return _jsonrpc_error(-32601, "Method not found", req_id)
 

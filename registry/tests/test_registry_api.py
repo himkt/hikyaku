@@ -70,10 +70,10 @@ def _auth_header(api_key: str) -> dict:
 
 
 def _override_auth_as(app: FastAPI, agent_id: str):
-    """Override auth dependency to return a fixed agent_id."""
+    """Override auth dependency to return a fixed (agent_id, tenant_id) tuple."""
 
     async def _fixed_auth():
-        return agent_id
+        return (agent_id, "test-default-tenant")
 
     app.dependency_overrides[get_authenticated_agent] = _fixed_auth
 
@@ -208,14 +208,15 @@ class TestListAgents:
     @pytest.mark.asyncio
     async def test_list_returns_registered_agents(self, api_env):
         """Returns all registered agents in the agents array."""
-        client, app = api_env["client"], api_env["app"]
+        client, app, store = api_env["client"], api_env["app"], api_env["store"]
 
-        # Register two agents
-        r1 = await _register_agent(client, name="Agent 1")
-        r2 = await _register_agent(client, name="Agent 2")
+        # Register two agents in the same tenant
+        key = "hky_testListAgentsKEYKEYKEYKEYKEYK"
+        tenant_hash = hashlib.sha256(key.encode()).hexdigest()
+        r1 = await store.create_agent(name="Agent 1", description="Test", api_key=key)
+        r2 = await store.create_agent(name="Agent 2", description="Test", api_key=key)
 
-        # Authenticate as one of them
-        _override_auth_as(app, r1["agent_id"])
+        _override_auth_as_tenant(app, r1["agent_id"], tenant_hash)
 
         resp = await client.get("/api/v1/agents")
         assert resp.status_code == 200
@@ -243,15 +244,17 @@ class TestListAgents:
     @pytest.mark.asyncio
     async def test_list_agent_has_required_fields(self, api_env):
         """Each agent in the list has agent_id, name, description, registered_at."""
-        client, app = api_env["client"], api_env["app"]
+        client, app, store = api_env["client"], api_env["app"], api_env["store"]
 
-        r = await _register_agent(
-            client,
+        key = "hky_testListFieldsKEYKEYKEYKEYKEYK"
+        tenant_hash = hashlib.sha256(key.encode()).hexdigest()
+        r = await store.create_agent(
             name="Detailed Agent",
             description="Has all fields",
             skills=[{"id": "s1", "name": "Skill 1", "description": "A skill", "tags": []}],
+            api_key=key,
         )
-        _override_auth_as(app, r["agent_id"])
+        _override_auth_as_tenant(app, r["agent_id"], tenant_hash)
 
         resp = await client.get("/api/v1/agents")
         data = resp.json()
@@ -267,13 +270,15 @@ class TestListAgents:
         """Deregistered agents are not included in the list."""
         client, app, store = api_env["client"], api_env["app"], api_env["store"]
 
-        r1 = await _register_agent(client, name="Active Agent")
-        r2 = await _register_agent(client, name="Gone Agent")
+        key = "hky_testListExcludeKEYKEYKEYKEYKEYK"
+        tenant_hash = hashlib.sha256(key.encode()).hexdigest()
+        r1 = await store.create_agent(name="Active Agent", description="Test", api_key=key)
+        r2 = await store.create_agent(name="Gone Agent", description="Test", api_key=key)
 
         # Deregister one agent via store
         await store.deregister_agent(r2["agent_id"])
 
-        _override_auth_as(app, r1["agent_id"])
+        _override_auth_as_tenant(app, r1["agent_id"], tenant_hash)
 
         resp = await client.get("/api/v1/agents")
         data = resp.json()
@@ -302,10 +307,12 @@ class TestGetAgentDetail:
     @pytest.mark.asyncio
     async def test_get_existing_agent(self, api_env):
         """Returns agent detail for a registered agent."""
-        client, app = api_env["client"], api_env["app"]
+        client, app, store = api_env["client"], api_env["app"], api_env["store"]
 
-        r = await _register_agent(client, name="Detail Agent", description="Full detail")
-        _override_auth_as(app, r["agent_id"])
+        key = "hky_testGetExistingKEYKEYKEYKEYKEYK"
+        tenant_hash = hashlib.sha256(key.encode()).hexdigest()
+        r = await store.create_agent(name="Detail Agent", description="Full detail", api_key=key)
+        _override_auth_as_tenant(app, r["agent_id"], tenant_hash)
 
         resp = await client.get(f"/api/v1/agents/{r['agent_id']}")
         assert resp.status_code == 200
@@ -383,17 +390,19 @@ class TestDeregisterAgent:
     @pytest.mark.asyncio
     async def test_deregistered_agent_removed_from_list(self, api_env):
         """After deregistration, agent no longer appears in GET /agents list."""
-        client, app = api_env["client"], api_env["app"]
+        client, app, store = api_env["client"], api_env["app"], api_env["store"]
 
-        r1 = await _register_agent(client, name="Keeper")
-        r2 = await _register_agent(client, name="Leaver")
+        key = "hky_testDeregListKEYKEYKEYKEYKEYKEY"
+        tenant_hash = hashlib.sha256(key.encode()).hexdigest()
+        r1 = await store.create_agent(name="Keeper", description="Test", api_key=key)
+        r2 = await store.create_agent(name="Leaver", description="Test", api_key=key)
 
         # Deregister r2
-        _override_auth_as(app, r2["agent_id"])
+        _override_auth_as_tenant(app, r2["agent_id"], tenant_hash)
         await client.delete(f"/api/v1/agents/{r2['agent_id']}")
 
         # List agents as r1
-        _override_auth_as(app, r1["agent_id"])
+        _override_auth_as_tenant(app, r1["agent_id"], tenant_hash)
         resp = await client.get("/api/v1/agents")
         names = {a["name"] for a in resp.json()["agents"]}
         assert "Leaver" not in names

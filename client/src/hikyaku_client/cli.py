@@ -62,8 +62,9 @@ def cli(ctx, url, api_key, agent_id, json_output):
 @click.option("--name", required=True, help="Agent name")
 @click.option("--description", required=True, help="Agent description")
 @click.option("--skills", default=None, help="Skills as JSON string")
+@click.option("--api-key", "join_api_key", default=None, help="API key to join existing tenant")
 @click.pass_context
-def register(ctx, name, description, skills):
+def register(ctx, name, description, skills, join_api_key):
     """Register a new agent with the broker."""
     try:
         parsed_skills = None
@@ -77,7 +78,8 @@ def register(ctx, name, description, skills):
 
         result = _run(
             api.register_agent(
-                ctx.obj["url"], name, description, skills=parsed_skills
+                ctx.obj["url"], name, description,
+                skills=parsed_skills, api_key=join_api_key,
             )
         )
 
@@ -259,6 +261,7 @@ def agents(ctx, detail_id):
             api.list_agents(
                 ctx.obj["url"],
                 ctx.obj["api_key"],
+                caller_id=ctx.obj["agent_id"],
                 agent_id=detail_id,
             )
         )
