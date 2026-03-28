@@ -1,6 +1,6 @@
 # Hikyaku
 
-**Status**: Approved
+**Status**: Complete
 **Progress**: 40/40 tasks complete
 **Last Updated**: 2026-03-28
 
@@ -957,3 +957,4 @@ Create a Claude Code skill file so coding agents can use the `hikyaku` CLI via n
 | 2026-03-28 | Rename project to **Hikyaku**. Packages: `hikyaku-registry` (server) + `hikyaku-client` (CLI). Directories: `registry/` + `client/`. CLI command: `hikyaku`. Env vars: `HIKYAKU_URL`, `HIKYAKU_API_KEY`, `HIKYAKU_AGENT_ID`. API key prefix: `hky_`. Add Step 10: Agent Skill — `.claude/skills/hikyaku` skill file for Claude Code integration. Total tasks: 36→38. |
 | 2026-03-28 | Configure as **uv workspace** monorepo. Add root `pyproject.toml` with `[tool.uv.workspace] members = ["registry", "client"]`. Add `uv.lock`, `CLAUDE.md` to project structure. Add uv workspace rationale (reproducible builds, unified toolchain, per-package execution via `uv run --package`). Step 1 renamed to "Workspace & Broker Package Setup", +2 tasks (root pyproject.toml, `uv sync`). Total tasks: 38→40. |
 | 2026-03-28 | Rename project from **Postbox** to **Hikyaku** (飛脚). All package names, module names, CLI command, environment variables, and API key prefix updated: `hikyaku-registry`, `hikyaku-client`, `hikyaku` CLI, `HIKYAKU_*` env vars, `hky_` prefix. |
+| 2026-03-28 | Implementation complete. All 40/40 tasks done. 222 tests passing (171 registry + 51 client). Status → Complete. |
