@@ -10,7 +10,7 @@ Hikyaku enables ephemeral agents -- such as Claude Code sessions, CI/CD runners,
 - **Tenant Isolation** -- Shared API key defines a tenant boundary; cross-tenant agents are fully invisible to each other
 - **Unicast Messaging** -- Send messages to a specific agent by ID (same-tenant only)
 - **Broadcast Messaging** -- Send messages to all agents in the same tenant
-- **Inbox Polling** -- Agents poll for new messages at their own pace
+- **Inbox Polling** -- Agents poll for new messages at their own pace; supports delta polling via `statusTimestampAfter`
 - **Message Lifecycle** -- Acknowledge, cancel (retract), and track message status
 - **Two-Header Auth** -- API key (tenant) + Agent-Id (identity) required on all authenticated requests
 - **CLI Tool** -- Full-featured command-line client for all broker operations
@@ -48,6 +48,7 @@ Key design decisions:
 - The `contextId` field is set to the recipient's agent ID on every delivery Task, enabling inbox discovery via `ListTasks(contextId=myAgentId)`.
 - Task states map to message lifecycle: `INPUT_REQUIRED` (unread), `COMPLETED` (acknowledged), `CANCELED` (retracted), `FAILED` (routing error).
 - FastAPI is the ASGI parent; the A2A SDK handler is mounted at the root path. FastAPI routes (`/api/v1/*`) take priority.
+- Tenants are ephemeral: when the last agent in a tenant deregisters, the API key becomes invalid. A new registration without auth is needed to create a fresh tenant.
 
 ## Quick Start
 
@@ -141,6 +142,8 @@ All requests (except initial registration and the Agent Card endpoint) require t
 | `Authorization: Bearer <api_key>` | Authenticates the tenant (`SHA-256(api_key)` = `tenant_id`) |
 | `X-Agent-Id: <agent_id>` | Identifies the specific agent within the tenant |
 
+API keys use the format `hky_` + 32 random hex characters (e.g., `hky_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4`).
+
 ### Registry API (REST)
 
 Base path: `/api/v1`
@@ -151,15 +154,45 @@ Base path: `/api/v1`
 | GET | `/api/v1/agents` | Bearer + Agent-Id | List agents in the caller's tenant |
 | GET | `/api/v1/agents/{id}` | Bearer + Agent-Id | Get agent detail (404 if not in same tenant) |
 | DELETE | `/api/v1/agents/{id}` | Bearer + Agent-Id | Deregister an agent (self only) |
+| GET | `/.well-known/agent-card.json` | None | Broker's own A2A Agent Card |
+
+Registry API errors use a consistent JSON envelope:
+
+```json
+{
+  "error": {
+    "code": "AGENT_NOT_FOUND",
+    "message": "Agent with id '...' not found"
+  }
+}
+```
+
+| Error Code | HTTP Status | Description |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | Missing or invalid API key, missing `X-Agent-Id`, or agent-tenant mismatch |
+| `FORBIDDEN` | 403 | API key does not match the target resource |
+| `AGENT_NOT_FOUND` | 404 | Agent does not exist, is deregistered, or belongs to a different tenant |
+| `INVALID_REQUEST` | 400 | Missing required fields or invalid values |
 
 ### A2A Operations (JSON-RPC 2.0)
 
 | Method | Description |
 |---|---|
 | `SendMessage` | Send unicast (`metadata.destination=<agent-uuid>`) or broadcast (`metadata.destination=*`) |
-| `ListTasks` | Poll inbox -- use `contextId=<own-agent-id>` to retrieve messages addressed to this agent |
+| `ListTasks` | Poll inbox -- use `contextId=<own-agent-id>` to retrieve messages addressed to this agent; supports `statusTimestampAfter` for delta polling |
 | `GetTask` | Retrieve a specific message by task ID |
 | `CancelTask` | Retract an unread message (sender only, `INPUT_REQUIRED` state only) |
+
+`ListTasks` enforces that `contextId` must equal the caller's agent ID. Providing a different `contextId` returns an error to prevent inbox snooping.
+
+### Message Lifecycle
+
+| Task State | Meaning |
+|---|---|
+| `TASK_STATE_INPUT_REQUIRED` | Message queued, awaiting recipient pickup (unread) |
+| `TASK_STATE_COMPLETED` | Message acknowledged by recipient |
+| `TASK_STATE_CANCELED` | Message retracted by sender before ACK |
+| `TASK_STATE_FAILED` | Routing error (returned immediately to sender) |
 
 ## Tech Stack
 
@@ -180,6 +213,12 @@ hikyaku/
     src/hikyaku_client/
     tests/
     pyproject.toml
+  docs/
+    spec/                 # API and data model specifications
+      registry-api.md
+      a2a-operations.md
+      data-model.md
+  ARCHITECTURE.md         # System architecture and design decisions
 ```
 
 ## Development
