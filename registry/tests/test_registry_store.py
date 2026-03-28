@@ -106,15 +106,6 @@ class TestCreateAgent:
         assert stored_hash == expected_hash
 
     @pytest.mark.asyncio
-    async def test_creates_api_key_index(self, store, redis_client):
-        """apikey:{sha256} -> agent_id mapping is created in Redis."""
-        result = await store.create_agent(name="Test Agent", description="A test agent")
-        api_key_hash = hashlib.sha256(result["api_key"].encode()).hexdigest()
-
-        stored_id = await redis_client.get(f"apikey:{api_key_hash}")
-        assert stored_id == result["agent_id"]
-
-    @pytest.mark.asyncio
     async def test_adds_to_active_set(self, store, redis_client):
         """agent_id is added to agents:active set."""
         result = await store.create_agent(name="Test Agent", description="A test agent")
@@ -345,16 +336,6 @@ class TestDeregisterAgent:
         assert not await redis_client.sismember("agents:active", agent_id)
 
     @pytest.mark.asyncio
-    async def test_deletes_api_key_index(self, store, redis_client):
-        """apikey:{hash} mapping is deleted on deregistration."""
-        created = await store.create_agent(name="Test Agent", description="Test")
-        api_key_hash = hashlib.sha256(created["api_key"].encode()).hexdigest()
-
-        assert await redis_client.get(f"apikey:{api_key_hash}") is not None
-        await store.deregister_agent(created["agent_id"])
-        assert await redis_client.get(f"apikey:{api_key_hash}") is None
-
-    @pytest.mark.asyncio
     async def test_retains_agent_record(self, store, redis_client):
         """Agent hash record remains in Redis after deregistration (for TTL cleanup)."""
         created = await store.create_agent(name="Test Agent", description="Test")
@@ -383,62 +364,6 @@ class TestDeregisterAgent:
         assert await redis_client.sismember("agents:active", r2["agent_id"])
         status = await redis_client.hget(f"agent:{r2['agent_id']}", "status")
         assert status == "active"
-
-        # Agent 2's API key still resolves
-        api_key_hash = hashlib.sha256(r2["api_key"].encode()).hexdigest()
-        assert await redis_client.get(f"apikey:{api_key_hash}") == r2["agent_id"]
-
-
-# ---------------------------------------------------------------------------
-# lookup_by_api_key
-# ---------------------------------------------------------------------------
-
-
-class TestLookupByApiKey:
-    """Tests for RegistryStore.lookup_by_api_key."""
-
-    @pytest.mark.asyncio
-    async def test_valid_key_returns_agent_id(self, store):
-        """Returns agent_id for a valid, active API key."""
-        created = await store.create_agent(name="Test Agent", description="Test")
-        agent_id = await store.lookup_by_api_key(created["api_key"])
-        assert agent_id == created["agent_id"]
-
-    @pytest.mark.asyncio
-    async def test_invalid_key_returns_none(self, store):
-        """Returns None for an unknown API key."""
-        agent_id = await store.lookup_by_api_key("hky_00000000000000000000000000000000")
-        assert agent_id is None
-
-    @pytest.mark.asyncio
-    async def test_deregistered_agent_returns_none(self, store):
-        """Returns None after agent deregistration (API key index is deleted)."""
-        created = await store.create_agent(name="Test Agent", description="Test")
-        await store.deregister_agent(created["agent_id"])
-
-        agent_id = await store.lookup_by_api_key(created["api_key"])
-        assert agent_id is None
-
-    @pytest.mark.asyncio
-    async def test_correct_agent_among_multiple(self, store):
-        """Returns the correct agent_id when multiple agents are registered."""
-        r1 = await store.create_agent(name="Agent 1", description="First")
-        r2 = await store.create_agent(name="Agent 2", description="Second")
-        r3 = await store.create_agent(name="Agent 3", description="Third")
-
-        assert await store.lookup_by_api_key(r1["api_key"]) == r1["agent_id"]
-        assert await store.lookup_by_api_key(r2["api_key"]) == r2["agent_id"]
-        assert await store.lookup_by_api_key(r3["api_key"]) == r3["agent_id"]
-
-    @pytest.mark.asyncio
-    async def test_uses_sha256_hashing(self, store, redis_client):
-        """The lookup correctly uses SHA-256 to hash the key before Redis lookup."""
-        created = await store.create_agent(name="Test Agent", description="Test")
-        api_key_hash = hashlib.sha256(created["api_key"].encode()).hexdigest()
-
-        # Verify the key exists at the expected Redis path
-        stored_id = await redis_client.get(f"apikey:{api_key_hash}")
-        assert stored_id == created["agent_id"]
 
 
 # ===========================================================================

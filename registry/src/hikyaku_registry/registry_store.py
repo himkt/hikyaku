@@ -16,9 +16,11 @@ class RegistryStore:
         name: str,
         description: str,
         skills: list[dict] | None = None,
+        api_key: str | None = None,
     ) -> dict:
         agent_id = str(uuid.uuid4())
-        api_key = "hky_" + secrets.token_hex(16)
+        if api_key is None:
+            api_key = "hky_" + secrets.token_hex(16)
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
         registered_at = datetime.now(UTC).isoformat()
 
@@ -40,8 +42,8 @@ class RegistryStore:
 
         pipe = self._redis.pipeline()
         pipe.hset(f"agent:{agent_id}", mapping=record)
-        pipe.set(f"apikey:{api_key_hash}", agent_id)
         pipe.sadd("agents:active", agent_id)
+        pipe.sadd(f"tenant:{api_key_hash}:agents", agent_id)
         await pipe.execute()
 
         return {
@@ -58,8 +60,15 @@ class RegistryStore:
         record.pop("api_key_hash", None)
         return record
 
-    async def list_active_agents(self) -> list[dict]:
-        member_ids = await self._redis.smembers("agents:active")
+    async def list_active_agents(
+        self, tenant_id: str | None = None
+    ) -> list[dict]:
+        if tenant_id is not None:
+            member_ids = await self._redis.smembers(
+                f"tenant:{tenant_id}:agents"
+            )
+        else:
+            member_ids = await self._redis.smembers("agents:active")
         if not member_ids:
             return []
 
@@ -89,11 +98,17 @@ class RegistryStore:
         pipe.hset(f"agent:{agent_id}", "deregistered_at", deregistered_at)
         pipe.srem("agents:active", agent_id)
         if api_key_hash:
-            pipe.delete(f"apikey:{api_key_hash}")
+            pipe.srem(f"tenant:{api_key_hash}:agents", agent_id)
         await pipe.execute()
 
         return True
 
-    async def lookup_by_api_key(self, api_key: str) -> str | None:
-        api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-        return await self._redis.get(f"apikey:{api_key_hash}")
+    async def verify_agent_tenant(
+        self, agent_id: str, tenant_id: str
+    ) -> bool:
+        api_key_hash = await self._redis.hget(
+            f"agent:{agent_id}", "api_key_hash"
+        )
+        if api_key_hash is None:
+            return False
+        return api_key_hash == tenant_id
