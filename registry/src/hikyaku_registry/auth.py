@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 
 
 async def get_authenticated_agent(request: Request = None, store=None) -> str:
