@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 [tool.uv.workspace]
 members = ["registry", "client"]
 
+[tool.uv.sources]
+a2a-sdk = { git = "https://github.com/google/a2a-python.git" }
+
 [dependency-groups]
 dev = [
     "fakeredis>=2.34.1",
