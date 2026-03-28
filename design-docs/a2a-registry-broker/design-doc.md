@@ -10,15 +10,15 @@ An A2A-native Message Broker and Agent Registry service that enables coding agen
 
 ## Success Criteria
 
-- [ ] Agents can self-register and receive a UUID + API key
-- [ ] Agents can discover other agents via the Registry API
-- [ ] Agent A can send a unicast message to Agent B via A2A SendMessage
-- [ ] Agent A can broadcast a message to all registered agents via A2A SendMessage
-- [ ] Recipient agents can discover unread messages via A2A ListTasks
-- [ ] Recipient agents can ACK messages via A2A SendMessage (multi-turn)
-- [ ] Senders can retract unread messages via A2A CancelTask
-- [ ] FIFO ordering is guaranteed per sender→receiver pair
-- [ ] The Broker serves a valid A2A Agent Card at `/.well-known/agent-card.json`
+- [x] Agents can self-register and receive a UUID + API key
+- [x] Agents can discover other agents via the Registry API
+- [x] Agent A can send a unicast message to Agent B via A2A SendMessage
+- [x] Agent A can broadcast a message to all registered agents via A2A SendMessage
+- [x] Recipient agents can discover unread messages via A2A ListTasks
+- [x] Recipient agents can ACK messages via A2A SendMessage (multi-turn)
+- [x] Senders can retract unread messages via A2A CancelTask
+- [x] FIFO ordering is guaranteed per sender→receiver pair
+- [x] The Broker serves a valid A2A Agent Card at `/.well-known/agent-card.json`
 
 ---
 
