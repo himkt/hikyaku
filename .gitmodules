@@ -1,0 +1,3 @@
+[submodule "vendor/A2A"]
+	path = vendor/A2A
+	url = https://github.com/a2aproject/A2A.git
