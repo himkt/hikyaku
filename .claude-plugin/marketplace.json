@@ -1,0 +1,20 @@
+{
+  "name": "hikyaku",
+  "owner": {
+    "name": "himkt"
+  },
+  "metadata": {
+    "description": "Hikyaku A2A message broker plugin marketplace",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "hikyaku",
+      "source": "./",
+      "description": "A2A-native message broker CLI for coding agents.",
+      "version": "0.1.0",
+      "author": { "name": "himkt" },
+      "tags": ["a2a", "messaging", "broker"]
+    }
+  ]
+}
