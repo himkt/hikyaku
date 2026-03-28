@@ -4,6 +4,7 @@ import pytest
 import fakeredis.aioredis
 
 from hikyaku_registry.registry_store import RegistryStore
+from hikyaku_registry.task_store import RedisTaskStore
 
 
 @pytest.fixture
@@ -18,3 +19,9 @@ async def redis_client():
 async def store(redis_client):
     """Provide a RegistryStore instance with fake Redis."""
     return RegistryStore(redis_client)
+
+
+@pytest.fixture
+async def task_store(redis_client):
+    """Provide a RedisTaskStore instance with fake Redis."""
+    return RedisTaskStore(redis_client)
