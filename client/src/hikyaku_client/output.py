@@ -21,6 +21,8 @@ def format_register(data: dict) -> str:
 
 
 def format_task(task: dict) -> str:
+    if "task" in task:
+        task = task["task"]
     task_id = task.get("id", "?")
     state = task.get("status", {}).get("state", "?")
     from_agent = task.get("metadata", {}).get("fromAgentId", "?")
@@ -61,7 +63,7 @@ def format_agent(agent: dict) -> str:
         f"  agent_id:    {agent.get('agent_id', '?')}",
         f"  name:        {agent.get('name', '?')}",
         f"  description: {agent.get('description', '?')}",
-        f"  status:      {agent.get('status', '?')}",
+        f"  status:      {agent.get('status', 'active')}",
     ]
     return "\n".join(lines)
 
