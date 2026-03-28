@@ -1,7 +1,10 @@
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException, Request
 
 
-async def get_authenticated_agent(request, store) -> str:
+async def get_authenticated_agent(request: Request = None, store=None) -> str:
+    if request is None or store is None:
+        raise HTTPException(status_code=401)
+
     auth_header = request.headers.get("authorization")
     if not auth_header:
         raise HTTPException(status_code=401)
