@@ -27,25 +27,25 @@ from hikyaku_registry.registry_store import RegistryStore
 # ---------------------------------------------------------------------------
 
 
-_TEST_API_KEY = "hky_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
-_OTHER_API_KEY = "hky_ffffffffffffffffffffffffffffffff"
-
-
 @pytest.fixture
 async def sse_env():
     """Provide a full ASGI app with fakeredis for SSE endpoint testing.
 
     Yields a dict with client, redis, stores, and pre-registered agents.
+    First agent creates a new tenant; second agent joins via returned api_key.
     """
     redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     app = create_app(redis=redis)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Register agents for testing
-        agent_a = await _register_agent(client, "Agent A", "Sender", api_key=_TEST_API_KEY)
+        # Register agent_a without api_key — creates a new tenant
+        agent_a = await _register_agent(client, "Agent A", "Sender")
+        api_key = agent_a["api_key"]
+
+        # Register agent_b with agent_a's api_key — joins the same tenant
         agent_b = await _register_agent(
-            client, "Agent B", "Receiver", api_key=_TEST_API_KEY
+            client, "Agent B", "Receiver", api_key=api_key
         )
 
         yield {
@@ -54,7 +54,7 @@ async def sse_env():
             "app": app,
             "agent_a": agent_a,
             "agent_b": agent_b,
-            "api_key": _TEST_API_KEY,
+            "api_key": api_key,
         }
 
     await redis.aclose()
@@ -173,10 +173,11 @@ class TestSSEAuth:
     async def test_missing_x_agent_id_header_returns_401(self, sse_env):
         """GET /api/v1/subscribe without X-Agent-Id header returns 401."""
         client = sse_env["client"]
+        api_key = sse_env["api_key"]
 
         resp = await client.get(
             "/api/v1/subscribe",
-            headers={"Authorization": f"Bearer {_TEST_API_KEY}"},
+            headers={"Authorization": f"Bearer {api_key}"},
         )
         assert resp.status_code == 401
 
@@ -196,10 +197,11 @@ class TestSSEAuth:
     async def test_nonexistent_agent_id_returns_401(self, sse_env):
         """GET /api/v1/subscribe with nonexistent agent_id returns 401."""
         client = sse_env["client"]
+        api_key = sse_env["api_key"]
 
         resp = await client.get(
             "/api/v1/subscribe",
-            headers=_auth(_TEST_API_KEY, "nonexistent-agent-id"),
+            headers=_auth(api_key, "nonexistent-agent-id"),
         )
         assert resp.status_code == 401
 
@@ -207,16 +209,17 @@ class TestSSEAuth:
     async def test_tenant_mismatch_returns_401(self, sse_env):
         """GET /api/v1/subscribe with agent from different tenant returns 401."""
         client = sse_env["client"]
+        api_key = sse_env["api_key"]
 
-        # Register an agent under a different API key (different tenant)
+        # Register an agent without api_key — creates a new (different) tenant
         other_agent = await _register_agent(
-            client, "Other Agent", "Different tenant", api_key=_OTHER_API_KEY
+            client, "Other Agent", "Different tenant"
         )
 
         # Try to subscribe using the first tenant's API key with the other agent
         resp = await client.get(
             "/api/v1/subscribe",
-            headers=_auth(_TEST_API_KEY, other_agent["agent_id"]),
+            headers=_auth(api_key, other_agent["agent_id"]),
         )
         assert resp.status_code == 401
 
