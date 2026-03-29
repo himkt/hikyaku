@@ -46,7 +46,6 @@ class TestPublish:
     async def test_publish_sends_message_to_channel(self, redis_client, pubsub):
         """publish() delivers task_id to the specified Redis Pub/Sub channel."""
         channel = "inbox:agent-001"
-        received = []
 
         # Subscribe using raw Redis to verify publish works
         raw_pubsub = redis_client.pubsub()

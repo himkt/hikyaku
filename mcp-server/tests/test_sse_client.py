@@ -8,7 +8,6 @@ a background SSE connection to the broker's /api/v1/subscribe endpoint.
 """
 
 import asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

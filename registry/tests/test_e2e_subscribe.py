@@ -22,7 +22,6 @@ from unittest.mock import AsyncMock
 import pytest
 import fakeredis.aioredis
 from httpx import AsyncClient, ASGITransport
-from a2a.types import Task
 
 from hikyaku_registry.main import create_app
 from hikyaku_registry.pubsub import PubSubManager
