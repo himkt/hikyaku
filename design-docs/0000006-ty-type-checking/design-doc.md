@@ -1,7 +1,7 @@
 # Introduce Type Checking with ty
 
 **Status**: Approved
-**Progress**: 10/12 tasks complete
+**Progress**: 11/12 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -160,7 +160,7 @@ dev = [
 
 ### Step 5: Run ty and fix errors
 
-- [ ] Run `uv run ty check` locally, fix any remaining errors, and tune `allowed-unresolved-imports` as needed <!-- completed: -->
+- [x] Run `uv run ty check` locally, fix any remaining errors, and tune `allowed-unresolved-imports` as needed <!-- completed: 2026-03-29T12:10 -->
 
 ### Step 6: CI integration
 

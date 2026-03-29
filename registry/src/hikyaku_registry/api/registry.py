@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import JSONResponse
 
@@ -9,7 +11,7 @@ from hikyaku_registry.models import (
     RegisterAgentRequest,
     RegisterAgentResponse,
 )
-from hikyaku_registry.registry_store import RegistryStore
+from hikyaku_registry.registry_store import AgentRecord, CreateAgentResult, RegistryStore
 from hikyaku_registry.redis_client import get_redis
 
 registry_router = APIRouter()
@@ -25,7 +27,7 @@ async def register_agent(
     body: RegisterAgentRequest,
     request: Request,
     store: RegistryStore = Depends(get_registry_store),
-) -> RegisterAgentResponse:
+) -> CreateAgentResult:
     tenant_info = await get_registration_tenant(request, store)
     api_key = tenant_info[0] if tenant_info is not None else None
 
@@ -42,7 +44,7 @@ async def register_agent(
 async def list_agents(
     auth: tuple = Depends(get_authenticated_agent),
     store: RegistryStore = Depends(get_registry_store),
-) -> ListAgentsResponse:
+) -> dict[str, Any]:
     _agent_id, tenant_id = auth
     agents = await store.list_active_agents(tenant_id=tenant_id)
     return {"agents": agents}
@@ -53,7 +55,7 @@ async def get_agent_detail(
     agent_id: str,
     auth: tuple = Depends(get_authenticated_agent),
     store: RegistryStore = Depends(get_registry_store),
-) -> JSONResponse | dict:
+) -> JSONResponse | AgentRecord:
     _caller_id, tenant_id = auth
 
     agent = await store.get_agent(agent_id)

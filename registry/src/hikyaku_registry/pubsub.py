@@ -7,6 +7,7 @@ Payload: task_id string (lightweight; full Task fetched separately by SSE endpoi
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from typing import Any
 
 
 class _Subscription:
@@ -32,7 +33,7 @@ class PubSubManager:
 
     def __init__(self, redis) -> None:
         self._redis = redis
-        self._subscriptions: dict[str, object] = {}
+        self._subscriptions: dict[str, Any] = {}
 
     async def publish(self, channel: str, message: str) -> None:
         """Publish a message (task_id) to a Redis Pub/Sub channel."""

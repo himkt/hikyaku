@@ -41,11 +41,19 @@ allowed-unresolved-imports = [
     "fakeredis.*",
     "pydantic_settings.*",
     "sse_starlette.*",
+    "starlette.*",
+    "fastapi.*",
+    "uvicorn",
+    "click.*",
+    "httpx.*",
+    "httpx_sse.*",
 ]
 
 [tool.ty.rules]
-# Keep defaults (most rules are error-level).
-# Override specific rules as needed during initial rollout.
+# Suppress false positives from redis.asyncio type stubs that return
+# Union[Awaitable[T], T] for sync/async compatibility. All instances
+# in this codebase are redis async calls that are correctly awaited.
+invalid-await = "ignore"
 
 [tool.ruff]
 exclude = ["vendor/"]

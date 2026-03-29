@@ -16,6 +16,7 @@ class RedisTaskStore:
         to_agent_id = metadata.get("toAgentId", "")
         msg_type = metadata.get("type", "")
 
+        assert task.status.timestamp is not None
         ts = datetime.fromisoformat(task.status.timestamp)
         score = ts.timestamp()
 

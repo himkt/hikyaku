@@ -31,6 +31,7 @@ class BrokerExecutor(AgentExecutor):
     async def execute(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
+        assert context.call_context is not None
         agent_id = context.call_context.state["agent_id"]
         tenant_id = context.call_context.state.get("tenant_id")
         message = context.message
@@ -49,6 +50,8 @@ class BrokerExecutor(AgentExecutor):
         if not has_destination:
             raise ValueError("Missing destination in message metadata")
 
+        assert message is not None
+        assert message.metadata is not None
         destination = message.metadata["destination"]
 
         if destination == "*":
@@ -63,8 +66,10 @@ class BrokerExecutor(AgentExecutor):
     async def cancel(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
+        assert context.call_context is not None
         agent_id = context.call_context.state["agent_id"]
         task_id = context.task_id
+        assert task_id is not None
 
         task = await self._task_store.get(task_id)
         if task is None:
@@ -220,6 +225,7 @@ class BrokerExecutor(AgentExecutor):
         agent_id: str,
     ) -> None:
         task_id = context.task_id
+        assert task_id is not None
         task = await self._task_store.get(task_id)
 
         if task is None:

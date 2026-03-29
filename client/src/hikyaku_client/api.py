@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 import httpx
 
@@ -10,7 +11,7 @@ async def register_agent(
     skills: list[dict] | None = None,
     api_key: str | None = None,
 ) -> dict:
-    body = {"name": name, "description": description}
+    body: dict[str, Any] = {"name": name, "description": description}
     if skills is not None:
         body["skills"] = skills
     headers = {}
@@ -76,7 +77,7 @@ async def poll_tasks(
     page_size: int | None = None,
     status: str | None = None,
 ) -> list:
-    params = {"contextId": agent_id}
+    params: dict[str, Any] = {"contextId": agent_id}
     if since:
         params["since"] = since
     if page_size:
