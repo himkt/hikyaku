@@ -1,7 +1,7 @@
 # WebUI Message Viewer
 
 **Status**: Approved
-**Progress**: 15/23 tasks complete
+**Progress**: 20/23 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -335,11 +335,11 @@ The `admin/dist/` directory is gitignored. The build step (`npm run build` in `a
 
 ### Step 4: SPA UI Components
 
-- [ ] Implement `LoginPage.tsx`: password input, login button, error display, ephemeral data footer note <!-- completed: -->
-- [ ] Implement `Dashboard.tsx`: header with tenant ID + logout, agent tabs, content area <!-- completed: -->
-- [ ] Implement `AgentTabs.tsx`: horizontal tabs with active/deregistered styling, sub-tabs for Inbox/Sent <!-- completed: -->
-- [ ] Implement `MessageList.tsx` + `MessageRow.tsx`: chronological message display with status badges and expandable body <!-- completed: -->
-- [ ] Implement `SendMessageForm.tsx`: destination dropdown, text area, send button with feedback <!-- completed: -->
+- [x] Implement `LoginPage.tsx`: password input, login button, error display, ephemeral data footer note <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `Dashboard.tsx`: header with tenant ID + logout, agent tabs, content area <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `AgentTabs.tsx`: horizontal tabs with active/deregistered styling, sub-tabs for Inbox/Sent <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `MessageList.tsx` + `MessageRow.tsx`: chronological message display with status badges and expandable body <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `SendMessageForm.tsx`: destination dropdown, text area, send button with feedback <!-- completed: 2026-03-29T13:30 -->
 
 ### Step 5: Build and Gitignore
 
