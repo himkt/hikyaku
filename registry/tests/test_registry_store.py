@@ -11,7 +11,6 @@ from datetime import datetime
 
 import pytest
 
-from hikyaku_registry.registry_store import RegistryStore
 
 # UUID v4 pattern
 UUID_V4_PATTERN = re.compile(

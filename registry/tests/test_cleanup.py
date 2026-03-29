@@ -264,7 +264,7 @@ class TestCleanupIsolation:
         )
 
         # Agent A: expired, will be cleaned
-        expired = await _register_and_deregister(store, redis, name="Expired", days_ago=10)
+        _expired = await _register_and_deregister(store, redis, name="Expired", days_ago=10)
 
         # Agent B: active, has tasks
         active = await store.create_agent(name="Active Agent", description="Active")

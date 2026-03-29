@@ -7,13 +7,13 @@ def format_json(data) -> str:
 
 def format_register(data: dict) -> str:
     lines = [
-        f"Agent registered successfully!",
+        "Agent registered successfully!",
         f"  agent_id:  {data['agent_id']}",
         f"  api_key:   {data['api_key']}",
         f"  name:      {data.get('name', '')}",
         "",
         "# Set these environment variables for subsequent commands:",
-        f"export HIKYAKU_URL=${{HIKYAKU_URL:-http://localhost:8000}}",
+        "export HIKYAKU_URL=${HIKYAKU_URL:-http://localhost:8000}",
         f"export HIKYAKU_API_KEY={data['api_key']}",
         f"export HIKYAKU_AGENT_ID={data['agent_id']}",
     ]

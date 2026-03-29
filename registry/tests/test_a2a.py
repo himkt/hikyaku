@@ -370,7 +370,7 @@ class TestBroadcastFlow:
 
         agent_a = await _register_agent(client, name="Broadcaster")
         api_key = agent_a["api_key"]
-        agent_b = await _register_agent(client, name="Listener", api_key=api_key)
+        _agent_b = await _register_agent(client, name="Listener", api_key=api_key)
 
         await _send_message(client, api_key, agent_a["agent_id"], destination="*")
 
@@ -487,8 +487,8 @@ class TestCancelTaskFlow:
 
         agent_a = await _register_agent(client, name="Broadcaster")
         api_key = agent_a["api_key"]
-        agent_b = await _register_agent(client, name="Recipient B", api_key=api_key)
-        agent_c = await _register_agent(client, name="Recipient C", api_key=api_key)
+        _agent_b = await _register_agent(client, name="Recipient B", api_key=api_key)
+        _agent_c = await _register_agent(client, name="Recipient C", api_key=api_key)
 
         # Broadcast
         result = await _send_message(client, api_key, agent_a["agent_id"], destination="*")

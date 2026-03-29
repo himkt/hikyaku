@@ -22,7 +22,6 @@ from a2a.types import (
     Role,
     Task,
     TaskState,
-    TaskStatus,
     TextPart,
 )
 
@@ -328,7 +327,7 @@ class TestBroadcastSend:
     @pytest.mark.asyncio
     async def test_creates_delivery_tasks_for_all_active_agents(self, env):
         """Broadcast creates one delivery Task per active agent (excluding sender)."""
-        executor, task_store, agent_a, agent_b, agent_c = (
+        executor, _task_store, agent_a, _agent_b, _agent_c = (
             env["executor"], env["task_store"],
             env["agent_a"], env["agent_b"], env["agent_c"],
         )
@@ -421,7 +420,7 @@ class TestBroadcastSend:
     @pytest.mark.asyncio
     async def test_delivery_tasks_have_input_required_state(self, env):
         """Each delivery Task is in INPUT_REQUIRED state."""
-        executor, agent_a, agent_b, agent_c = (
+        executor, agent_a, _agent_b, _agent_c = (
             env["executor"], env["agent_a"], env["agent_b"], env["agent_c"],
         )
         queue = EventQueue()
@@ -641,7 +640,7 @@ class TestGetTaskVisibility:
     @pytest.mark.asyncio
     async def test_sender_can_get_task(self, env):
         """Sender can access the task they created by taskId."""
-        task_store, agent_a = env["task_store"], env["agent_a"]
+        task_store, _agent_a = env["task_store"], env["agent_a"]
         delivery_task = await self._create_unicast_task(env)
 
         result = await task_store.get(delivery_task.id)
@@ -650,7 +649,7 @@ class TestGetTaskVisibility:
     @pytest.mark.asyncio
     async def test_recipient_can_get_task(self, env):
         """Recipient can access the task in their context."""
-        task_store, agent_b = env["task_store"], env["agent_b"]
+        task_store, _agent_b = env["task_store"], env["agent_b"]
         delivery_task = await self._create_unicast_task(env)
 
         result = await task_store.get(delivery_task.id)
@@ -668,7 +667,7 @@ class TestGetTaskVisibility:
     @pytest.mark.asyncio
     async def test_task_indexed_by_recipient_context(self, env):
         """Delivery Task is indexed under recipient's contextId in sorted set."""
-        task_store, redis, agent_b = (
+        _task_store, redis, agent_b = (
             env["task_store"], env["redis"], env["agent_b"],
         )
         delivery_task = await self._create_unicast_task(env)
@@ -975,7 +974,7 @@ class TestCrossTenantUnicast:
             await executor.execute(ghost_ctx, queue)
 
         # Both should produce the same type of error
-        assert type(cross_exc.value) == type(ghost_exc.value)
+        assert type(cross_exc.value) is type(ghost_exc.value)
 
     @pytest.mark.asyncio
     async def test_reverse_cross_tenant_also_blocked(self, tenant_env):

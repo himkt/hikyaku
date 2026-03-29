@@ -139,7 +139,7 @@ def broadcast(ctx, text):
         if ctx.obj["json_output"]:
             click.echo(output.format_json(result))
         else:
-            click.echo(f"Broadcast sent.")
+            click.echo("Broadcast sent.")
             click.echo(output.format_task_list(result))
     except Exception as e:
         click.echo(f"Error: {e}", err=True)

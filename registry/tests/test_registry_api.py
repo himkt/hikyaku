@@ -214,7 +214,7 @@ class TestListAgents:
         key = "hky_testListAgentsKEYKEYKEYKEYKEYK"
         tenant_hash = hashlib.sha256(key.encode()).hexdigest()
         r1 = await store.create_agent(name="Agent 1", description="Test", api_key=key)
-        r2 = await store.create_agent(name="Agent 2", description="Test", api_key=key)
+        _r2 = await store.create_agent(name="Agent 2", description="Test", api_key=key)
 
         _override_auth_as_tenant(app, r1["agent_id"], tenant_hash)
 
@@ -611,7 +611,7 @@ class TestTenantScopedListAgents:
         a1 = await store.create_agent(
             name="A1", description="Tenant A", api_key="hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA"
         )
-        a2 = await store.create_agent(
+        _a2 = await store.create_agent(
             name="A2", description="Tenant A", api_key="hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA"
         )
         tenant_a_hash = hashlib.sha256(

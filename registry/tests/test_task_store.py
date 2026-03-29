@@ -13,16 +13,12 @@ from datetime import datetime, timezone, timedelta
 import pytest
 from a2a.types import (
     Artifact,
-    Message,
     Part,
-    Role,
     Task,
     TaskState,
     TaskStatus,
     TextPart,
 )
-
-from hikyaku_registry.task_store import RedisTaskStore
 
 
 # ---------------------------------------------------------------------------
