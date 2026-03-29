@@ -1,7 +1,7 @@
 # WebUI Message Viewer
 
 **Status**: Approved
-**Progress**: 20/23 tasks complete
+**Progress**: 22/23 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -343,8 +343,8 @@ The `admin/dist/` directory is gitignored. The build step (`npm run build` in `a
 
 ### Step 5: Build and Gitignore
 
-- [ ] Add `admin/dist/` and `admin/node_modules/` to `.gitignore` <!-- completed: -->
-- [ ] Verify build produces `admin/dist/` that FastAPI serves correctly at `/ui/` <!-- completed: -->
+- [x] Add `admin/dist/` and `admin/node_modules/` to `.gitignore` <!-- completed: 2026-03-29T14:00 -->
+- [x] Verify build produces `admin/dist/` that FastAPI serves correctly at `/ui/` <!-- completed: 2026-03-29T14:00 -->
 
 ### Step 6: Backend Tests
 

@@ -1,2 +1,6 @@
 !design-docs
 !CLAUDE.md
+
+# WebUI SPA build output and dependencies
+admin/dist/
+admin/node_modules/
