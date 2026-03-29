@@ -1,7 +1,7 @@
 # API Key Specification: WebUI-Issued Keys with Auth0
 
 **Status**: Approved
-**Progress**: 33/43 tasks complete
+**Progress**: 37/43 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -394,10 +394,10 @@ if (tenantId) {
 
 ### Step 6: CLI Changes
 
-- [ ] Remove register-specific `--api-key` (`join_api_key`) from `register` command in `cli.py` <!-- completed: -->
-- [ ] Update `register` command to read global `ctx.obj["api_key"]` and validate it is set (error if missing) <!-- completed: -->
-- [ ] Update `register_agent` in `api.py` to always send `Authorization` header <!-- completed: -->
-- [ ] Update `test_cli.py` with tests for missing API key error and global key usage <!-- completed: -->
+- [x] Remove register-specific `--api-key` (`join_api_key`) from `register` command in `cli.py` <!-- completed: 2026-03-29 -->
+- [x] Update `register` command to read global `ctx.obj["api_key"]` and validate it is set (error if missing) <!-- completed: 2026-03-29 -->
+- [x] Update `register_agent` in `api.py` to always send `Authorization` header <!-- completed: 2026-03-29 -->
+- [x] Update `test_cli.py` with tests for missing API key error and global key usage <!-- completed: 2026-03-29 -->
 
 ### Step 7: WebUI Frontend Changes
 

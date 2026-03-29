@@ -64,10 +64,19 @@ def cli(ctx, url, api_key, agent_id, json_output):
 @click.option("--name", required=True, help="Agent name")
 @click.option("--description", required=True, help="Agent description")
 @click.option("--skills", default=None, help="Skills as JSON string")
-@click.option("--api-key", "join_api_key", default=None, help="API key to join existing tenant")
 @click.pass_context
-def register(ctx, name, description, skills, join_api_key):
+def register(ctx, name, description, skills):
     """Register a new agent with the broker."""
+    api_key = ctx.obj.get("api_key")
+    if not api_key:
+        click.echo(
+            "Error: --api-key is required for registration. "
+            "Create an API key at the Hikyaku WebUI.",
+            err=True,
+        )
+        ctx.exit(1)
+        return
+
     try:
         parsed_skills = None
         if skills is not None:
@@ -81,7 +90,7 @@ def register(ctx, name, description, skills, join_api_key):
         result = _run(
             api.register_agent(
                 ctx.obj["url"], name, description,
-                skills=parsed_skills, api_key=join_api_key,
+                skills=parsed_skills, api_key=api_key,
             )
         )
 
