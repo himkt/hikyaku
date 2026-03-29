@@ -1,7 +1,7 @@
 # API Key Specification: WebUI-Issued Keys with Auth0
 
-**Status**: Approved
-**Progress**: 37/43 tasks complete
+**Status**: Complete
+**Progress**: 43/43 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -401,12 +401,12 @@ if (tenantId) {
 
 ### Step 7: WebUI Frontend Changes
 
-- [ ] Add `@auth0/auth0-react` to `admin/package.json` <!-- completed: -->
-- [ ] Wrap `App` with `Auth0Provider`, fetch config from `/ui/api/auth/config` <!-- completed: -->
-- [ ] Replace `LoginPage` with Auth0-based login flow <!-- completed: -->
-- [ ] Update `api.ts`: replace API key auth with Auth0 JWT + `X-Tenant-Id` header <!-- completed: -->
-- [ ] Create `KeyManagement.tsx` component: list keys, create key (show raw key once), revoke key <!-- completed: -->
-- [ ] Update `App.tsx` routing: Auth0 login → key management → dashboard (with tenant selection) <!-- completed: -->
+- [x] Add `@auth0/auth0-react` to `admin/package.json` <!-- completed: 2026-03-29 -->
+- [x] Wrap `App` with `Auth0Provider`, fetch config from `/ui/api/auth/config` <!-- completed: 2026-03-29 -->
+- [x] Replace `LoginPage` with Auth0-based login flow <!-- completed: 2026-03-29 -->
+- [x] Update `api.ts`: replace API key auth with Auth0 JWT + `X-Tenant-Id` header <!-- completed: 2026-03-29 -->
+- [x] Create `KeyManagement.tsx` component: list keys, create key (show raw key once), revoke key <!-- completed: 2026-03-29 -->
+- [x] Update `App.tsx` routing: Auth0 login → key management → dashboard (with tenant selection) <!-- completed: 2026-03-29 -->
 
 ---
 

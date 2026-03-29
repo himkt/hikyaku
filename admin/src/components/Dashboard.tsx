@@ -14,7 +14,7 @@ interface DashboardProps {
 export default function Dashboard({
   tenantId,
   initialAgents,
-  onLogout,
+  onLogout: onBack,
 }: DashboardProps) {
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
@@ -74,10 +74,10 @@ export default function Dashboard({
           </span>
         </h1>
         <button
-          onClick={onLogout}
+          onClick={onBack}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
-          Logout
+          Back to Keys
         </button>
       </header>
 

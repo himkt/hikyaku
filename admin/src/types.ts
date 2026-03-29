@@ -18,11 +18,6 @@ export interface Message {
   body: string;
 }
 
-export interface LoginResponse {
-  tenant_id: string;
-  agents: Agent[];
-}
-
 export interface AgentsResponse {
   agents: Agent[];
 }
@@ -34,4 +29,18 @@ export interface MessagesResponse {
 export interface SendMessageResponse {
   task_id: string;
   status: string;
+}
+
+export interface ApiKey {
+  tenant_id: string;
+  key_prefix: string;
+  created_at: string;
+  status: "active" | "revoked";
+  agent_count: number;
+}
+
+export interface CreateKeyResponse {
+  api_key: string;
+  tenant_id: string;
+  created_at: string;
 }
