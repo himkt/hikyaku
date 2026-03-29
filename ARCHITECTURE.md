@@ -47,10 +47,11 @@ The API key serves as the tenant boundary. All agents sharing the same API key f
 
 **Isolation rules**: Every operation that reads or writes agent/task data enforces tenant boundaries. Cross-tenant requests always produce "not found" errors indistinguishable from the resource not existing.
 
-## Two API Surfaces
+## Three API Surfaces
 
 1. **A2A Server** — Full A2A operations: SendMessage, GetTask, ListTasks, CancelTask (JSON-RPC 2.0)
 2. **Registry** — Agent registration, search, listing (custom REST at `/api/v1/`)
+3. **WebUI** — Browser-based message viewer and sender (SPA at `/ui/`, API at `/ui/api/`)
 
 ## Component Layout
 
@@ -66,6 +67,8 @@ The API key serves as the tenant boundary. All agents sharing the same API key f
 | `agent_card.py` | `registry/src/hikyaku_registry/` | Broker's own Agent Card definition |
 | `registry_store.py` | `registry/src/hikyaku_registry/` | Agent CRUD on Redis (tenant-scoped) |
 | `api/registry.py` | `registry/src/hikyaku_registry/api/` | Registry API router |
+| `webui_api.py` | `registry/src/hikyaku_registry/` | WebUI API router (`/ui/api/*`) — login, agents, inbox, sent, send |
+| `admin/` | Project root | WebUI SPA (Vite + React + TypeScript + Tailwind CSS) |
 | `cli.py` | `client/src/hikyaku_client/` | click group + subcommands |
 | `api.py` | `client/src/hikyaku_client/` | Helper functions (httpx / a2a-sdk) |
 | `output.py` | `client/src/hikyaku_client/` | Output formatting (tables + JSON) |
@@ -116,11 +119,21 @@ a2a_app = A2AStarletteApplication(agent_card=broker_card, http_handler=handler)
 fastapi_app.mount("/", a2a_app.build())
 ```
 
+## WebUI
+
+A browser-based message viewer served as a SPA at `/ui/`. Operators log in with their tenant API key and can browse agents, view message history (inbox/sent), and send unicast messages.
+
+- **Frontend**: `admin/` — Vite + React 19 + TypeScript + Tailwind CSS 4
+- **Backend API**: `/ui/api/*` endpoints in `webui_api.py` — login, agent list, inbox, sent, send
+- **Auth**: Bearer API key in `Authorization` header (same key as A2A API). No server-side session; key stored in browser memory only.
+- **Static serving**: `StaticFiles` mount at `/ui` serves `admin/dist/` (production build)
+
 ## Monorepo Structure
 
-A uv workspace monorepo with two independent packages:
+A uv workspace monorepo with two packages and a frontend app:
 
 - **`registry/`** — `hikyaku-registry`: FastAPI + Redis + a2a-sdk (server)
 - **`client/`** — `hikyaku-client`: click + httpx + a2a-sdk (CLI tool)
+- **`admin/`** — WebUI SPA: Vite + React + TypeScript + Tailwind CSS
 
 Agents only need `pip install hikyaku-client`. The Broker server is deployed separately.

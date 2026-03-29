@@ -1,7 +1,7 @@
 # WebUI Message Viewer
 
-**Status**: Approved
-**Progress**: 0/23 tasks complete
+**Status**: Complete
+**Progress**: 23/23 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -254,31 +254,31 @@ A persistent banner or footer note on the dashboard:
 ### File Structure
 
 ```
+admin/                              # SPA source (Vite + React + TypeScript)
+  package.json
+  vite.config.ts
+  tsconfig.json
+  index.html
+  src/
+    main.tsx
+    App.tsx
+    api.ts                          # API client (fetch wrapper with auth header)
+    types.ts                        # TypeScript interfaces
+    components/
+      LoginPage.tsx
+      Dashboard.tsx
+      AgentTabs.tsx
+      MessageList.tsx
+      MessageRow.tsx
+      SendMessageForm.tsx
+  dist/                             # Built output (gitignored)
 registry/
-  webui/                          # New: SPA source
-    package.json
-    vite.config.ts
-    tsconfig.json
-    index.html
-    src/
-      main.tsx
-      App.tsx
-      api.ts                      # API client (fetch wrapper with auth header)
-      types.ts                    # TypeScript interfaces
-      components/
-        LoginPage.tsx
-        Dashboard.tsx
-        AgentTabs.tsx
-        MessageList.tsx
-        MessageRow.tsx
-        SendMessageForm.tsx
-    dist/                         # Built output (gitignored)
   src/hikyaku_registry/
-    webui_api.py                  # New: FastAPI router for /ui/api/*
-    main.py                       # Modified: mount webui router + static files
+    webui_api.py                    # New: FastAPI router for /ui/api/*
+    main.py                         # Modified: mount webui router + static files
 ```
 
-The `webui/dist/` directory is gitignored. The build step (`npm run build` in `registry/webui/`) produces the static files. In development, Vite dev server proxies API calls to FastAPI.
+The `admin/dist/` directory is gitignored. The build step (`npm run build` in `admin/`) produces the static files. In development, Vite dev server proxies API calls to FastAPI.
 
 ### Affected Files
 
@@ -286,9 +286,8 @@ The `webui/dist/` directory is gitignored. The build step (`npm run build` in `r
 |------|---------|
 | `registry/src/hikyaku_registry/webui_api.py` | **New**: FastAPI router with login, agents, inbox, sent, send endpoints |
 | `registry/src/hikyaku_registry/main.py` | Include `webui_router` BEFORE mounting `StaticFiles` at `/ui` (router must take precedence over static file catch-all) |
-| `registry/webui/` | **New**: Entire SPA project (Vite + React + TypeScript + Tailwind) |
-| `registry/pyproject.toml` | Add `jinja2` dependency (required by `StaticFiles` HTML mode for SPA fallback) |
-| `.gitignore` | Add `registry/webui/dist/`, `registry/webui/node_modules/` |
+| `admin/` | **New**: Entire SPA project (Vite + React + TypeScript + Tailwind) |
+| `.gitignore` | Add `admin/dist/`, `admin/node_modules/` |
 
 ### Error Handling
 
@@ -311,40 +310,39 @@ The `webui/dist/` directory is gitignored. The build step (`npm run build` in `r
 
 ### Step 1: WebUI API Backend
 
-- [ ] Create `registry/src/hikyaku_registry/webui_api.py` with `webui_router = APIRouter(prefix="/ui/api")` <!-- completed: -->
-- [ ] Implement `POST /ui/api/login` endpoint: extract Bearer token, compute SHA256, verify tenant exists, return agent list (active + deregistered-with-messages) <!-- completed: -->
-- [ ] Implement `GET /ui/api/agents` endpoint: same logic as login agent list, requires auth <!-- completed: -->
-- [ ] Implement `GET /ui/api/agents/{agent_id}/inbox` endpoint: use `RedisTaskStore.list(agent_id)`, filter out broadcast_summary, extract body text, resolve agent names <!-- completed: -->
-- [ ] Implement `GET /ui/api/agents/{agent_id}/sent` endpoint: read `tasks:sender:{agent_id}` set, load each task, filter broadcast_summary, sort by date desc, resolve agent names <!-- completed: -->
-- [ ] Implement `POST /ui/api/messages/send` endpoint: validate tenant membership for both from/to agents, delegate to BrokerExecutor <!-- completed: -->
-- [ ] Add shared auth dependency for WebUI endpoints (extract Bearer, compute tenant_id, verify tenant exists) <!-- completed: -->
+- [x] Create `registry/src/hikyaku_registry/webui_api.py` with `webui_router = APIRouter(prefix="/ui/api")` <!-- completed: 2026-03-29T12:00 -->
+- [x] Implement `POST /ui/api/login` endpoint: extract Bearer token, compute SHA256, verify tenant exists, return agent list (active + deregistered-with-messages) <!-- completed: 2026-03-29T12:00 -->
+- [x] Implement `GET /ui/api/agents` endpoint: same logic as login agent list, requires auth <!-- completed: 2026-03-29T12:00 -->
+- [x] Implement `GET /ui/api/agents/{agent_id}/inbox` endpoint: use `RedisTaskStore.list(agent_id)`, filter out broadcast_summary, extract body text, resolve agent names <!-- completed: 2026-03-29T12:00 -->
+- [x] Implement `GET /ui/api/agents/{agent_id}/sent` endpoint: read `tasks:sender:{agent_id}` set, load each task, filter broadcast_summary, sort by date desc, resolve agent names <!-- completed: 2026-03-29T12:00 -->
+- [x] Implement `POST /ui/api/messages/send` endpoint: validate tenant membership for both from/to agents, delegate to BrokerExecutor <!-- completed: 2026-03-29T12:00 -->
+- [x] Add shared auth dependency for WebUI endpoints (extract Bearer, compute tenant_id, verify tenant exists) <!-- completed: 2026-03-29T12:00 -->
 
 ### Step 2: Mount WebUI in FastAPI
 
-- [ ] Modify `main.py`: import and include `webui_router` BEFORE `StaticFiles` mount so API routes take precedence <!-- completed: -->
-- [ ] Mount `StaticFiles` at `/ui` pointing to `webui/dist/` with `html=True` for SPA fallback (must come AFTER router inclusion) <!-- completed: -->
-- [ ] Add `jinja2` to `registry/pyproject.toml` dependencies (required by Starlette's `StaticFiles` html mode) <!-- completed: -->
+- [x] Modify `main.py`: import and include `webui_router` BEFORE `StaticFiles` mount so API routes take precedence <!-- completed: 2026-03-29T12:30 -->
+- [x] Mount `SPAStaticFiles` at `/ui` pointing to `admin/dist/` with custom 404→index.html fallback (must come AFTER router inclusion) <!-- completed: 2026-03-29T12:30 -->
 
 ### Step 3: SPA Project Setup
 
-- [ ] Create `registry/webui/` with `package.json` (Vite 8.x, React 19.x, TypeScript, Tailwind CSS 4.x) <!-- completed: -->
-- [ ] Configure `vite.config.ts` with API proxy to `http://localhost:8000` for dev mode <!-- completed: -->
-- [ ] Set up Tailwind CSS 4.x (CSS-first config via `@import "tailwindcss"`) <!-- completed: -->
-- [ ] Create `src/api.ts`: fetch wrapper that injects `Authorization: Bearer` header from in-memory API key <!-- completed: -->
-- [ ] Create `src/types.ts`: TypeScript interfaces for Agent, Message, API responses <!-- completed: -->
+- [x] Set up `admin/` with `package.json` (Vite 8.x, React 19.x, TypeScript, Tailwind CSS 4.x) <!-- completed: 2026-03-29T13:00 -->
+- [x] Configure `vite.config.ts` with API proxy to `http://localhost:8000` for dev mode <!-- completed: 2026-03-29T13:00 -->
+- [x] Set up Tailwind CSS 4.x (CSS-first config via `@import "tailwindcss"`) <!-- completed: 2026-03-29T13:00 -->
+- [x] Create `src/api.ts`: fetch wrapper that injects `Authorization: Bearer` header from in-memory API key <!-- completed: 2026-03-29T13:00 -->
+- [x] Create `src/types.ts`: TypeScript interfaces for Agent, Message, API responses <!-- completed: 2026-03-29T13:00 -->
 
 ### Step 4: SPA UI Components
 
-- [ ] Implement `LoginPage.tsx`: password input, login button, error display, ephemeral data footer note <!-- completed: -->
-- [ ] Implement `Dashboard.tsx`: header with tenant ID + logout, agent tabs, content area <!-- completed: -->
-- [ ] Implement `AgentTabs.tsx`: horizontal tabs with active/deregistered styling, sub-tabs for Inbox/Sent <!-- completed: -->
-- [ ] Implement `MessageList.tsx` + `MessageRow.tsx`: chronological message display with status badges and expandable body <!-- completed: -->
-- [ ] Implement `SendMessageForm.tsx`: destination dropdown, text area, send button with feedback <!-- completed: -->
+- [x] Implement `LoginPage.tsx`: password input, login button, error display, ephemeral data footer note <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `Dashboard.tsx`: header with tenant ID + logout, agent tabs, content area <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `AgentTabs.tsx`: horizontal tabs with active/deregistered styling, sub-tabs for Inbox/Sent <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `MessageList.tsx` + `MessageRow.tsx`: chronological message display with status badges and expandable body <!-- completed: 2026-03-29T13:30 -->
+- [x] Implement `SendMessageForm.tsx`: destination dropdown, text area, send button with feedback <!-- completed: 2026-03-29T13:30 -->
 
 ### Step 5: Build and Gitignore
 
-- [ ] Add `registry/webui/dist/` and `registry/webui/node_modules/` to `.gitignore` <!-- completed: -->
-- [ ] Verify `npm run build` produces `dist/` that FastAPI serves correctly at `/ui/` <!-- completed: -->
+- [x] Add `admin/dist/` and `admin/node_modules/` to `.gitignore` <!-- completed: 2026-03-29T14:00 -->
+- [x] Verify build produces `admin/dist/` that FastAPI serves correctly at `/ui/` <!-- completed: 2026-03-29T14:00 -->
 
 ### Step 6: Backend Tests
 
@@ -358,3 +356,4 @@ The `webui/dist/` directory is gitignored. The build step (`npm run build` in `r
 |------|---------|
 | 2026-03-29 | Initial draft |
 | 2026-03-29 | Approved after review. Fixed auth flow for deregistered tenants, added to_agent_name, clarified mount order and send endpoint. |
+| 2026-03-29 | Implementation complete. SPA moved from registry/webui/ to admin/. Added cross-tenant isolation fix for inbox/sent endpoints. |

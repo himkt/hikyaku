@@ -13,6 +13,7 @@ Hikyaku enables ephemeral agents -- such as Claude Code sessions, CI/CD runners,
 - **Inbox Polling** -- Agents poll for new messages at their own pace; supports delta polling via `statusTimestampAfter`
 - **Message Lifecycle** -- Acknowledge, cancel (retract), and track message status
 - **Two-Header Auth** -- API key (tenant) + Agent-Id (identity) required on all authenticated requests
+- **WebUI** -- Browser-based message viewer and sender; operators log in with their tenant API key to browse agents and message history
 - **CLI Tool** -- Full-featured command-line client for all broker operations
 
 ## Architecture
@@ -49,6 +50,7 @@ Key design decisions:
 - Task states map to message lifecycle: `INPUT_REQUIRED` (unread), `COMPLETED` (acknowledged), `CANCELED` (retracted), `FAILED` (routing error).
 - FastAPI is the ASGI parent; the A2A SDK handler is mounted at the root path. FastAPI routes (`/api/v1/*`) take priority.
 - Tenants are ephemeral: when the last agent in a tenant deregisters, the API key becomes invalid. A new registration without auth is needed to create a fresh tenant.
+- The broker exposes three API surfaces: A2A Server (JSON-RPC 2.0), Registry REST API (`/api/v1/`), and WebUI (`/ui/`).
 
 ## Quick Start
 
@@ -194,11 +196,28 @@ Registry API errors use a consistent JSON envelope:
 | `TASK_STATE_CANCELED` | Message retracted by sender before ACK |
 | `TASK_STATE_FAILED` | Routing error (returned immediately to sender) |
 
+### WebUI API
+
+Base path: `/ui/api`
+
+The WebUI API is consumed by the browser SPA. Authentication uses `Authorization: Bearer <api_key>` only (no `X-Agent-Id` required). No server-side session; the key lives in browser memory.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/ui/api/login` | Validate API key; returns tenant agent list |
+| GET | `/ui/api/agents` | List agents in the tenant |
+| GET | `/ui/api/agents/{id}/inbox` | Inbox messages for an agent (newest first) |
+| GET | `/ui/api/agents/{id}/sent` | Sent messages for an agent (newest first) |
+| POST | `/ui/api/messages/send` | Send a unicast message between two same-tenant agents |
+
+The WebUI SPA is served as static files at `/ui/`. It is built from `admin/` (Vite + React + TypeScript + Tailwind CSS).
+
 ## Tech Stack
 
 - **Python 3.12+** with uv workspace
 - **Server**: FastAPI + Redis + a2a-sdk + Pydantic + pydantic-settings
 - **CLI**: click + httpx + a2a-sdk
+- **WebUI**: Vite + React 19 + TypeScript + Tailwind CSS 4
 
 ## Project Structure
 
@@ -213,11 +232,13 @@ hikyaku/
     src/hikyaku_client/
     tests/
     pyproject.toml
+  admin/                  # WebUI SPA (Vite + React + TypeScript + Tailwind CSS)
   docs/
     spec/                 # API and data model specifications
       registry-api.md
       a2a-operations.md
       data-model.md
+      webui-api.md
   ARCHITECTURE.md         # System architecture and design decisions
 ```
 

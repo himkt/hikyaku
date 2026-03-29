@@ -2,10 +2,13 @@ import asyncio
 import hashlib
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from a2a.server.agent_execution import RequestContext
 from a2a.server.context import ServerCallContext
 from a2a.server.events import EventQueue
@@ -30,6 +33,12 @@ from hikyaku_registry.executor import BrokerExecutor
 from hikyaku_registry.redis_client import close_pool, get_redis
 from hikyaku_registry.registry_store import RegistryStore
 from hikyaku_registry.task_store import RedisTaskStore
+from hikyaku_registry.webui_api import (
+    webui_router,
+    get_webui_store,
+    get_webui_task_store,
+    get_webui_executor,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -64,6 +73,18 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     await close_pool()
+
+
+class SPAStaticFiles(StaticFiles):
+    """StaticFiles subclass that falls back to index.html for SPA routing."""
+
+    async def get_response(self, path, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as e:
+            if e.status_code == 404:
+                return await super().get_response("index.html", scope)
+            raise
 
 
 def _task_to_dict(task: Task) -> dict:
@@ -228,7 +249,7 @@ async def _handle_list_tasks(
     return {"tasks": [_task_to_dict(t) for t in tasks]}
 
 
-def create_app(redis=None) -> FastAPI:
+def create_app(redis=None, webui_dist_dir=None) -> FastAPI:
     app = FastAPI(title="Hikyaku Broker", version="0.1.0", lifespan=lifespan)
     app.include_router(registry_router, prefix="/api/v1")
 
@@ -249,6 +270,12 @@ def create_app(redis=None) -> FastAPI:
 
     app.dependency_overrides[get_registry_store] = _get_store
     app.dependency_overrides[get_authenticated_agent] = _get_auth
+
+    # WebUI router (must be included BEFORE StaticFiles mount)
+    app.include_router(webui_router)
+    app.dependency_overrides[get_webui_store] = lambda: registry_store
+    app.dependency_overrides[get_webui_task_store] = lambda: task_store
+    app.dependency_overrides[get_webui_executor] = lambda: executor
 
     # Agent Card endpoint
     agent_card = build_agent_card()
@@ -321,6 +348,19 @@ def create_app(redis=None) -> FastAPI:
             return _jsonrpc_success(result, req_id)
         except (ValueError, PermissionError) as e:
             return _jsonrpc_error(-32000, str(e), req_id)
+
+    # Mount StaticFiles for WebUI SPA (AFTER router so API routes take precedence)
+    if webui_dist_dir is None:
+        webui_dist_dir = str(
+            Path(__file__).resolve().parent.parent.parent.parent / "admin" / "dist"
+        )
+    dist_path = Path(webui_dist_dir)
+    if dist_path.exists():
+        app.mount(
+            "/ui",
+            SPAStaticFiles(directory=str(dist_path)),
+            name="webui",
+        )
 
     return app
 
