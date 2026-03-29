@@ -2,8 +2,6 @@ import hashlib
 
 from fastapi import HTTPException, Request
 
-from hikyaku_registry.registry_store import RegistryStore
-
 
 def _extract_bearer_token(request: Request) -> str:
     """Extract and validate Bearer token from Authorization header.

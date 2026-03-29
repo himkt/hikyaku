@@ -11,7 +11,7 @@ from hikyaku_registry.models import (
     RegisterAgentRequest,
     RegisterAgentResponse,
 )
-from hikyaku_registry.registry_store import AgentRecord, CreateAgentResult, RegistryStore
+from hikyaku_registry.registry_store import CreateAgentResult, RegistryStore
 from hikyaku_registry.redis_client import get_redis
 
 registry_router = APIRouter()
