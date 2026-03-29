@@ -10,12 +10,15 @@ function AppContent() {
   const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tokenReady, setTokenReady] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
       setGetAccessToken(() => getAccessTokenSilently());
+      setTokenReady(true);
     } else {
       setGetAccessToken(null);
+      setTokenReady(false);
     }
   }, [isAuthenticated, getAccessTokenSilently]);
 
@@ -46,6 +49,14 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <LoginPage />;
+  }
+
+  if (!tokenReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-400">Loading...</p>
+      </div>
+    );
   }
 
   if (!selectedTenantId) {

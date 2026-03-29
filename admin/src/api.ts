@@ -49,6 +49,10 @@ async function request<T>(
     throw new Error(data.error || data.detail || `HTTP ${resp.status}`);
   }
 
+  if (resp.status === 204) {
+    return undefined as T;
+  }
+
   return resp.json() as Promise<T>;
 }
 
