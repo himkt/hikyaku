@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     broker_base_url: str = "http://localhost:8000"
     deregistered_task_ttl_days: int = 7
     cleanup_interval_seconds: int = 3600
+    auth0_domain: str = ""
+    auth0_client_id: str = ""
 
     model_config = {"env_prefix": ""}
 

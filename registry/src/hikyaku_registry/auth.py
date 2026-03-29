@@ -1,6 +1,11 @@
 import hashlib
+from typing import ClassVar
 
-from fastapi import HTTPException, Request
+import jwt
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from hikyaku_registry.config import settings
 
 
 def _extract_bearer_token(request: Request) -> str:
@@ -72,3 +77,49 @@ async def get_registration_tenant(
         raise HTTPException(status_code=401)
 
     return (token, api_key_hash)
+
+
+class Auth0Verifier:
+    _jwks_client: ClassVar[jwt.PyJWKClient | None] = None
+
+    @classmethod
+    def get_jwks_client(cls) -> jwt.PyJWKClient:
+        if cls._jwks_client is None:
+            jwks_url = f"https://{settings.auth0_domain}/.well-known/jwks.json"
+            cls._jwks_client = jwt.PyJWKClient(
+                jwks_url, cache_keys=True, lifespan=60 * 60 * 24
+            )
+        return cls._jwks_client
+
+
+async def verify_auth0_user(
+    request: Request,
+    cred: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+) -> None:
+    """Validate Auth0 JWT, store decoded token in request.scope."""
+    try:
+        signing_key = Auth0Verifier.get_jwks_client().get_signing_key_from_jwt(
+            cred.credentials
+        )
+        decoded_token = jwt.decode(
+            jwt=cred.credentials,
+            key=signing_key.key,
+            algorithms=["RS256"],
+            audience=settings.auth0_client_id,
+        )
+    except jwt.exceptions.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    request.scope["token"] = cred.credentials
+    request.scope["auth0"] = decoded_token
+
+
+def get_user_id(request: Request) -> str:
+    """Extract Auth0 sub claim from request scope (set by verify_auth0_user)."""
+    if (user_id := request.scope.get("auth0", {}).get("sub")) is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    return user_id
