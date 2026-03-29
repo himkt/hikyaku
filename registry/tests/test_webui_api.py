@@ -1137,3 +1137,169 @@ class TestSendMessage:
         assert len(msgs) == 1
         assert msgs[0]["body"] == "Sent test"
         assert msgs[0]["to_agent_id"] == recipient["agent_id"]
+
+
+# ===========================================================================
+# Cross-tenant isolation for inbox/sent
+# ===========================================================================
+
+
+class TestCrossTenantIsolation:
+    """Tests for cross-tenant rejection on inbox and sent endpoints.
+
+    Accessing another tenant's agent inbox or sent should be rejected.
+    """
+
+    @pytest.mark.asyncio
+    async def test_inbox_cross_tenant_agent_rejected(self, webui_env):
+        """Accessing inbox of an agent in another tenant is rejected."""
+        store, client = webui_env["store"], webui_env["client"]
+
+        # Create agent in caller's tenant (so auth passes)
+        await _setup_agent(store, "My Agent")
+        # Create agent in another tenant
+        other = await _setup_agent(store, "Other Agent", api_key=_OTHER_API_KEY)
+
+        resp = await client.get(
+            f"/ui/api/agents/{other['agent_id']}/inbox",
+            headers=_auth_header(),
+        )
+        assert resp.status_code in (403, 404)
+
+    @pytest.mark.asyncio
+    async def test_sent_cross_tenant_agent_rejected(self, webui_env):
+        """Accessing sent of an agent in another tenant is rejected."""
+        store, client = webui_env["store"], webui_env["client"]
+
+        await _setup_agent(store, "My Agent")
+        other = await _setup_agent(store, "Other Agent", api_key=_OTHER_API_KEY)
+
+        resp = await client.get(
+            f"/ui/api/agents/{other['agent_id']}/sent",
+            headers=_auth_header(),
+        )
+        assert resp.status_code in (403, 404)
+
+
+# ===========================================================================
+# Deregistered agent inbox/sent access
+# ===========================================================================
+
+
+class TestDeregisteredAgentAccess:
+    """Tests that deregistered agents with messages can still be viewed.
+
+    The design doc shows deregistered agents in the dashboard. Their
+    inbox and sent data should remain accessible.
+    """
+
+    @pytest.mark.asyncio
+    async def test_deregistered_agent_inbox_accessible(self, webui_env):
+        """Inbox of a deregistered agent (with messages) is still accessible."""
+        store, task_store, client = (
+            webui_env["store"], webui_env["task_store"], webui_env["client"],
+        )
+
+        # Need an active agent so auth succeeds
+        active = await _setup_agent(store, "Active Agent")
+        dereg = await _setup_agent(store, "Deregistered Agent", deregister=True)
+
+        await _create_task(
+            task_store,
+            from_agent_id=active["agent_id"],
+            to_agent_id=dereg["agent_id"],
+            text="Message to deregistered",
+        )
+
+        resp = await client.get(
+            f"/ui/api/agents/{dereg['agent_id']}/inbox",
+            headers=_auth_header(),
+        )
+        assert resp.status_code == 200
+
+        msgs = resp.json()["messages"]
+        assert len(msgs) == 1
+        assert msgs[0]["body"] == "Message to deregistered"
+
+    @pytest.mark.asyncio
+    async def test_deregistered_agent_sent_accessible(self, webui_env):
+        """Sent messages of a deregistered agent are still accessible."""
+        store, task_store, client = (
+            webui_env["store"], webui_env["task_store"], webui_env["client"],
+        )
+
+        active = await _setup_agent(store, "Active Agent")
+        dereg = await _setup_agent(store, "Deregistered Agent", deregister=True)
+
+        await _create_task(
+            task_store,
+            from_agent_id=dereg["agent_id"],
+            to_agent_id=active["agent_id"],
+            text="Sent before deregistration",
+        )
+
+        resp = await client.get(
+            f"/ui/api/agents/{dereg['agent_id']}/sent",
+            headers=_auth_header(),
+        )
+        assert resp.status_code == 200
+
+        msgs = resp.json()["messages"]
+        assert len(msgs) == 1
+        assert msgs[0]["body"] == "Sent before deregistration"
+
+
+# ===========================================================================
+# Send from deregistered agent
+# ===========================================================================
+
+
+class TestSendFromDeregistered:
+    """Tests that deregistered agents cannot send messages.
+
+    The design doc requires from_agent_id membership in
+    tenant:{tenant_id}:agents. Deregistered agents are removed from this set.
+    """
+
+    @pytest.mark.asyncio
+    async def test_send_from_deregistered_agent_rejected(self, webui_env):
+        """Sending from a deregistered agent is rejected."""
+        store, client = webui_env["store"], webui_env["client"]
+
+        active = await _setup_agent(store, "Active Agent")
+        dereg = await _setup_agent(store, "Deregistered Sender", deregister=True)
+
+        resp = await client.post(
+            "/ui/api/messages/send",
+            json={
+                "from_agent_id": dereg["agent_id"],
+                "to_agent_id": active["agent_id"],
+                "text": "Ghost message",
+            },
+            headers=_auth_header(),
+        )
+        # Deregistered agent is no longer in tenant set
+        assert resp.status_code in (400, 403, 404)
+
+
+# ===========================================================================
+# Login error response format
+# ===========================================================================
+
+
+class TestLoginErrorFormat:
+    """Tests for the specific error response format on login failure.
+
+    The design doc specifies: {"error": "Invalid API key"}.
+    """
+
+    @pytest.mark.asyncio
+    async def test_invalid_key_error_message(self, webui_env):
+        """Login with invalid key returns {"error": "Invalid API key"}."""
+        client = webui_env["client"]
+
+        resp = await client.post("/ui/api/login", headers=_auth_header())
+        assert resp.status_code == 401
+
+        data = resp.json()
+        assert data["error"] == "Invalid API key"
