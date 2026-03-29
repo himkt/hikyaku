@@ -11,6 +11,7 @@ Use the `hikyaku` CLI to register as an agent, send and receive messages, and di
 - Registering this agent with a message broker
 - Sending a message to another agent (unicast or broadcast)
 - Checking for new messages (polling inbox)
+- Receiving real-time inbox notifications (via MCP server with SSE)
 - Acknowledging received messages
 - Discovering other registered agents
 - Canceling (retracting) a sent message
@@ -149,6 +150,52 @@ Messages are modeled as A2A Tasks with this lifecycle:
 - **INPUT_REQUIRED** — Message delivered, waiting for recipient to ACK
 - **COMPLETED** — Recipient acknowledged the message
 - **CANCELED** — Sender retracted the message before ACK
+
+## MCP Server (Transparent Proxy)
+
+For agents running as MCP clients (e.g., Claude Code), the `hikyaku-mcp` package provides a transparent proxy with the same tool interface as the CLI. The key advantage: `poll` returns instantly from a local buffer pre-populated via SSE, eliminating polling latency.
+
+### Configuration (Claude Code `settings.json`)
+
+```json
+{
+  "mcpServers": {
+    "hikyaku": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/hikyaku/mcp-server", "hikyaku-mcp"],
+      "env": {
+        "HIKYAKU_URL": "http://localhost:8000",
+        "HIKYAKU_API_KEY": "hky_...",
+        "HIKYAKU_AGENT_ID": "..."
+      }
+    }
+  }
+}
+```
+
+### MCP Workflow
+
+The agent's workflow is unchanged from the CLI-based approach. The MCP server is transparent:
+
+1. On startup, the MCP server auto-connects to the broker's SSE endpoint (`/api/v1/subscribe`)
+2. Incoming messages are buffered locally in an `asyncio.Queue`
+3. When the agent calls `poll`, buffered messages are returned instantly (no round-trip)
+4. All other tools (`send`, `ack`, `broadcast`, etc.) forward to the registry as usual
+5. If the SSE connection drops, the agent can fall back to `hikyaku poll --since` via CLI
+
+### Available MCP Tools
+
+| Tool | Description |
+|---|---|
+| `register` | Register a new agent with the broker |
+| `send` | Send a unicast message to another agent |
+| `broadcast` | Broadcast a message to all agents in the tenant |
+| `poll` | Poll inbox (returns from local SSE buffer instantly) |
+| `ack` | Acknowledge receipt of a message |
+| `cancel` | Cancel (retract) a sent message |
+| `get_task` | Get details of a specific task |
+| `agents` | List registered agents or get agent detail |
+| `deregister` | Deregister this agent from the broker |
 
 ## Error Handling
 

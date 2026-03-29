@@ -20,14 +20,34 @@ An A2A-native message broker and agent registry for coding agents. Enables ephem
           └─────────────┘           │           │  │ │ Agent Store    │ │  │
         │                                       │  │ │ Task Store     │ │  │
          ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            │  │ │ Tenant Sets    │ │  │
-                                                │  │ └────────────────┘ │  │
-         Tenant Y (different API key)           │  └────────────────────┘  │
-        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐           │                          │
+                                                │  │ │ Pub/Sub Chans  │ │  │
+         Tenant Y (different API key)           │  │ └────────────────┘ │  │
+        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐           │  └────────────────────┘  │
           ┌─────────────┐                       │                          │
-        │ │   Agent C    │ (isolated) │         │                          │
-          │ (discovery)  │                      │                          │
-        │ └─────────────┘             │         └──────────────────────────┘
-         ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+        │ │   Agent C    │ (isolated) │         │  ┌────────────────────┐  │
+          │ (discovery)  │                      │  │ SSE Endpoint       │  │
+        │ └─────────────┘             │         │  │ /api/v1/subscribe  │  │
+         ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            │  └────────────────────┘  │
+                                                └──────────────────────────┘
+
+  ┌─────────────┐  MCP tools   ┌──────────────────────────────────────┐
+  │ Claude Code  │─────────────→│  hikyaku-mcp (transparent proxy)    │
+  │  (agent)     │  poll, send, │                                     │
+  │              │  ack, ...    │  ┌──────────┐   ┌────────────────┐  │
+  └─────────────┘              │  │  Buffer   │◄──│  SSE Client    │  │
+                               │  │ (Queue)   │   │  (background)  │  │
+                               │  └─────┬─────┘   └───────┬────────┘  │
+                               │        │ poll            │ SSE       │
+                               │  ┌─────┴─────┐   ┌──────┴─────────┐ │
+                               │  │  Registry  │   │ /api/v1/       │ │
+                               │  │  Forwarder │   │ subscribe      │ │
+                               │  └─────┬─────┘   └──────┬─────────┘ │
+                               └────────┼─────────────────┼───────────┘
+                                        │ REST/JSON-RPC   │ SSE
+                                        ▼                 ▼
+                               ┌──────────────────────────────────────┐
+                               │  hikyaku-registry (broker)           │
+                               └──────────────────────────────────────┘
 ```
 
 ## Tenant Isolation
@@ -53,6 +73,33 @@ The API key serves as the tenant boundary. All agents sharing the same API key f
 2. **Registry** — Agent registration, search, listing (custom REST at `/api/v1/`)
 3. **WebUI** — Browser-based message viewer and sender (SPA at `/ui/`, API at `/ui/api/`)
 
+## Streaming Subscribe (SSE)
+
+Real-time inbox notification via Server-Sent Events (SSE). Agents can subscribe to their inbox and receive messages as they arrive, instead of polling.
+
+### Server-side: SSE Endpoint
+
+- **Endpoint**: `GET /api/v1/subscribe` (authenticated via `Authorization: Bearer <api_key>` + `X-Agent-Id: <agent_id>`)
+- **Response**: `text/event-stream` — SSE events with `event: message`, `id: <task_id>`, `data: <A2A Task JSON>`
+- **Keepalive**: `: keepalive` comment every 30 seconds
+- **Mechanism**: When `BrokerExecutor` delivers a message, it publishes the `task_id` to Redis Pub/Sub channel `inbox:{recipient_agent_id}`. The SSE endpoint subscribes to this channel, fetches the full Task from Redis, and streams it to the client.
+- **Connection lifecycle**: Connection stays open until client disconnects. Server detects disconnect and unsubscribes from Redis Pub/Sub. No server-side replay — client uses `poll --since` to catch up on missed messages.
+
+### Redis Pub/Sub Integration
+
+- **PubSubManager** (`registry/src/hikyaku_registry/pubsub.py`): Manages Redis Pub/Sub subscriptions. Provides `publish(channel, message)` and async iteration over subscribed channels.
+- **Channel pattern**: `inbox:{agent_id}` — one channel per agent inbox
+- **Payload**: Only the `task_id` is published (lightweight). The SSE endpoint fetches the full Task from Redis to ensure data consistency.
+
+### MCP Server (Transparent Proxy)
+
+The `hikyaku-mcp` package (`mcp-server/`) is a transparent proxy that exposes the same tool interface as the `hikyaku` CLI but internally maintains an SSE connection to pre-buffer messages. The agent's workflow is unchanged — it calls `poll`, `send`, `ack`, etc. — but `poll` returns instantly from a local buffer.
+
+- **SSE Client**: Background `asyncio.Task` connects to `/api/v1/subscribe` and buffers incoming Task objects in an `asyncio.Queue` (max 1000 messages, oldest dropped on overflow)
+- **Registry Forwarder**: All non-poll tools (send, broadcast, ack, cancel, get_task, agents, register, deregister) forward requests to the registry via httpx
+- **Poll**: Drains the local buffer; supports optional `since` filter and `page_size` limit
+- **Configuration**: `HIKYAKU_URL`, `HIKYAKU_API_KEY`, `HIKYAKU_AGENT_ID` environment variables
+
 ## Component Layout
 
 | Component | Location | Description |
@@ -67,11 +114,17 @@ The API key serves as the tenant boundary. All agents sharing the same API key f
 | `agent_card.py` | `registry/src/hikyaku_registry/` | Broker's own Agent Card definition |
 | `registry_store.py` | `registry/src/hikyaku_registry/` | Agent CRUD on Redis (tenant-scoped) |
 | `api/registry.py` | `registry/src/hikyaku_registry/api/` | Registry API router |
+| `pubsub.py` | `registry/src/hikyaku_registry/` | PubSubManager for Redis Pub/Sub (inbox notification channels) |
+| `subscribe.py` | `registry/src/hikyaku_registry/api/` | SSE endpoint router (`GET /api/v1/subscribe`) |
 | `webui_api.py` | `registry/src/hikyaku_registry/` | WebUI API router (`/ui/api/*`) — login, agents, inbox, sent, send |
 | `admin/` | Project root | WebUI SPA (Vite + React + TypeScript + Tailwind CSS) |
 | `cli.py` | `client/src/hikyaku_client/` | click group + subcommands |
 | `api.py` | `client/src/hikyaku_client/` | Helper functions (httpx / a2a-sdk) |
 | `output.py` | `client/src/hikyaku_client/` | Output formatting (tables + JSON) |
+| `server.py` | `mcp-server/src/hikyaku_mcp/` | MCP server entry point + tool definitions |
+| `sse_client.py` | `mcp-server/src/hikyaku_mcp/` | SSE connection manager (auto-connect, buffer) |
+| `registry.py` | `mcp-server/src/hikyaku_mcp/` | Registry API forwarder (httpx) |
+| `config.py` | `mcp-server/src/hikyaku_mcp/` | Environment variable configuration |
 
 ## Responsibility Assignment
 
@@ -84,8 +137,10 @@ The Broker acts as the central A2A Server. Individual agents are A2A clients tha
 | Message sending | Sending agent (A2A client) | A2A `SendMessage` to Broker |
 | Message storage & routing | Broker | Redis Task store, contextId-based routing |
 | Message retrieval | Receiving agent (A2A client) | A2A `ListTasks(contextId=own_id)` to Broker |
+| Real-time inbox notification | Broker | `GET /api/v1/subscribe` (SSE) via Redis Pub/Sub |
 | Message ACK | Receiving agent (A2A client) | A2A `SendMessage(taskId=existing)` multi-turn |
 | Message cancellation | Sending agent (A2A client) | A2A `CancelTask` to Broker |
+| MCP proxy (all tools) | hikyaku-mcp | Transparent proxy with SSE-buffered poll |
 
 ## Key Design Decisions
 
@@ -130,10 +185,11 @@ A browser-based message viewer served as a SPA at `/ui/`. Operators log in with 
 
 ## Monorepo Structure
 
-A uv workspace monorepo with two packages and a frontend app:
+A uv workspace monorepo with three packages and a frontend app:
 
 - **`registry/`** — `hikyaku-registry`: FastAPI + Redis + a2a-sdk (server)
 - **`client/`** — `hikyaku-client`: click + httpx + a2a-sdk (CLI tool)
+- **`mcp-server/`** — `hikyaku-mcp`: MCP server transparent proxy (mcp + httpx + httpx-sse)
 - **`admin/`** — WebUI SPA: Vite + React + TypeScript + Tailwind CSS
 
-Agents only need `pip install hikyaku-client`. The Broker server is deployed separately.
+Agents can use `pip install hikyaku-client` for the CLI, or configure `hikyaku-mcp` as an MCP server for instant poll responses. The Broker server is deployed separately.

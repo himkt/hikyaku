@@ -11,6 +11,8 @@ Hikyaku enables ephemeral agents -- such as Claude Code sessions, CI/CD runners,
 - **Unicast Messaging** -- Send messages to a specific agent by ID (same-tenant only)
 - **Broadcast Messaging** -- Send messages to all agents in the same tenant
 - **Inbox Polling** -- Agents poll for new messages at their own pace; supports delta polling via `statusTimestampAfter`
+- **Real-time Inbox Notification** -- SSE endpoint (`/api/v1/subscribe`) pushes new messages as they arrive
+- **MCP Server** -- Transparent proxy for Claude Code and other MCP clients; `poll` returns instantly from SSE-buffered messages
 - **Message Lifecycle** -- Acknowledge, cancel (retract), and track message status
 - **Two-Header Auth** -- API key (tenant) + Agent-Id (identity) required on all authenticated requests
 - **WebUI** -- Browser-based message viewer and sender; operators log in with their tenant API key to browse agents and message history
@@ -156,6 +158,7 @@ Base path: `/api/v1`
 | GET | `/api/v1/agents` | Bearer + Agent-Id | List agents in the caller's tenant |
 | GET | `/api/v1/agents/{id}` | Bearer + Agent-Id | Get agent detail (404 if not in same tenant) |
 | DELETE | `/api/v1/agents/{id}` | Bearer + Agent-Id | Deregister an agent (self only) |
+| GET | `/api/v1/subscribe` | Bearer + Agent-Id | SSE stream for real-time inbox notifications |
 | GET | `/.well-known/agent-card.json` | None | Broker's own A2A Agent Card |
 
 Registry API errors use a consistent JSON envelope:
@@ -212,11 +215,38 @@ The WebUI API is consumed by the browser SPA. Authentication uses `Authorization
 
 The WebUI SPA is served as static files at `/ui/`. It is built from `admin/` (Vite + React + TypeScript + Tailwind CSS).
 
+## MCP Server (Claude Code Integration)
+
+The `hikyaku-mcp` package provides a transparent MCP server proxy. It exposes the same tools as the CLI but `poll` returns instantly from a local SSE-buffered queue.
+
+### Configuration
+
+Add to your Claude Code `settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "hikyaku": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/hikyaku/mcp-server", "hikyaku-mcp"],
+      "env": {
+        "HIKYAKU_URL": "http://localhost:8000",
+        "HIKYAKU_API_KEY": "hky_...",
+        "HIKYAKU_AGENT_ID": "..."
+      }
+    }
+  }
+}
+```
+
+The MCP server auto-connects to the broker's SSE endpoint on startup. All tools (send, broadcast, ack, cancel, get_task, agents, register, deregister) forward to the registry; `poll` drains the local buffer.
+
 ## Tech Stack
 
 - **Python 3.12+** with uv workspace
 - **Server**: FastAPI + Redis + a2a-sdk + Pydantic + pydantic-settings
 - **CLI**: click + httpx + a2a-sdk
+- **MCP Server**: mcp + httpx + httpx-sse
 - **WebUI**: Vite + React 19 + TypeScript + Tailwind CSS 4
 
 ## Project Structure
@@ -232,6 +262,10 @@ hikyaku/
     src/hikyaku_client/
     tests/
     pyproject.toml
+  mcp-server/             # hikyaku-mcp MCP server package
+    src/hikyaku_mcp/
+    tests/
+    pyproject.toml
   admin/                  # WebUI SPA (Vite + React + TypeScript + Tailwind CSS)
   docs/
     spec/                 # API and data model specifications
@@ -239,6 +273,7 @@ hikyaku/
       a2a-operations.md
       data-model.md
       webui-api.md
+      streaming-subscribe.md
   ARCHITECTURE.md         # System architecture and design decisions
 ```
 

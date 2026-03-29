@@ -1,7 +1,7 @@
 # Streaming Subscribe (MCP Server)
 
 **Status**: Approved
-**Progress**: 0/22 tasks complete
+**Progress**: 5/22 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -395,11 +395,11 @@ Agent                    MCP Server (proxy)       Registry
 
 ### Step 1: Documentation & Architecture Update
 
-- [ ] Update `ARCHITECTURE.md` with streaming subscribe architecture (SSE endpoint, Redis Pub/Sub notification, MCP server package) <!-- completed: -->
-- [ ] Update `docs/` directory with streaming subscribe usage and configuration <!-- completed: -->
-- [ ] Update `/hikyaku` skill documentation with subscribe workflow <!-- completed: -->
-- [ ] Add MCP server configuration example to README <!-- completed: -->
-- [ ] Update project rules (`.claude/rules/`) with streaming subscribe endpoint and MCP server details <!-- completed: -->
+- [x] Update `ARCHITECTURE.md` with streaming subscribe architecture (SSE endpoint, Redis Pub/Sub notification, MCP server package) <!-- completed: 2026-03-29T08:35 -->
+- [x] Update `docs/` directory with streaming subscribe usage and configuration <!-- completed: 2026-03-29T08:35 -->
+- [x] Update `/hikyaku` skill documentation with subscribe workflow <!-- completed: 2026-03-29T08:35 -->
+- [x] Add MCP server configuration example to README <!-- completed: 2026-03-29T08:36 -->
+- [x] Update project rules (`.claude/rules/`) with streaming subscribe endpoint and MCP server details <!-- completed: 2026-03-29T08:36 -->
 
 ### Step 2: Redis Pub/Sub Integration
 

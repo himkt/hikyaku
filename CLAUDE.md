@@ -23,11 +23,14 @@ A2A-native message broker + agent registry for coding agents.
 - **Monorepo structure** (uv workspace):
   - `registry/` — `hikyaku-registry` (FastAPI + Redis + a2a-sdk)
   - `client/` — `hikyaku-client` (click + httpx + a2a-sdk)
+  - `mcp-server/` — `hikyaku-mcp` (mcp + httpx + httpx-sse)
 - **CLI command**: `hikyaku`
+- **MCP server command**: `hikyaku-mcp`
 
 ## Tech Stack
 
 - Python 3.12+ with uv workspace
 - Server: FastAPI + Redis + a2a-sdk
 - CLI: click + httpx + a2a-sdk
+- MCP Server: mcp + httpx + httpx-sse
 
