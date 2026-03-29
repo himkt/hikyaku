@@ -1,7 +1,7 @@
 # WebUI Message Viewer
 
-**Status**: Approved
-**Progress**: 22/23 tasks complete
+**Status**: Complete
+**Progress**: 23/23 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -358,3 +358,4 @@ The `admin/dist/` directory is gitignored. The build step (`npm run build` in `a
 |------|---------|
 | 2026-03-29 | Initial draft |
 | 2026-03-29 | Approved after review. Fixed auth flow for deregistered tenants, added to_agent_name, clarified mount order and send endpoint. |
+| 2026-03-29 | Implementation complete. SPA moved from registry/webui/ to admin/. Added cross-tenant isolation fix for inbox/sent endpoints. |
