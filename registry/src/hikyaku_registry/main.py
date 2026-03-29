@@ -30,6 +30,7 @@ from hikyaku_registry.api.registry import (
 from hikyaku_registry.auth import get_authenticated_agent
 from hikyaku_registry.config import settings
 from hikyaku_registry.executor import BrokerExecutor
+from hikyaku_registry.pubsub import PubSubManager
 from hikyaku_registry.redis_client import close_pool, get_redis
 from hikyaku_registry.registry_store import RegistryStore
 from hikyaku_registry.task_store import RedisTaskStore
@@ -257,8 +258,11 @@ def create_app(redis=None, webui_dist_dir=None) -> FastAPI:
         redis = get_redis()
     registry_store = RegistryStore(redis)
     task_store = RedisTaskStore(redis)
+    pubsub_manager = PubSubManager(redis)
     executor = BrokerExecutor(
-        registry_store=registry_store, task_store=task_store
+        registry_store=registry_store,
+        task_store=task_store,
+        pubsub=pubsub_manager,
     )
 
     # Override dependencies so API endpoints use the same redis

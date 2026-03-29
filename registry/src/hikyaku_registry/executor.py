@@ -21,9 +21,11 @@ class BrokerExecutor(AgentExecutor):
         self,
         registry_store: RegistryStore,
         task_store: RedisTaskStore,
+        pubsub=None,
     ) -> None:
         self._registry_store = registry_store
         self._task_store = task_store
+        self._pubsub = pubsub
 
     async def execute(
         self, context: RequestContext, event_queue: EventQueue
@@ -133,6 +135,10 @@ class BrokerExecutor(AgentExecutor):
         )
 
         await self._task_store.save(delivery_task)
+        if self._pubsub is not None:
+            await self._pubsub.publish(
+                f"inbox:{destination}", delivery_task.id
+            )
         await event_queue.enqueue_event(delivery_task)
 
     async def _handle_broadcast(
@@ -171,6 +177,10 @@ class BrokerExecutor(AgentExecutor):
             )
 
             await self._task_store.save(delivery_task)
+            if self._pubsub is not None:
+                await self._pubsub.publish(
+                    f"inbox:{agent['agent_id']}", delivery_task.id
+                )
             await event_queue.enqueue_event(delivery_task)
 
         summary_task = Task(

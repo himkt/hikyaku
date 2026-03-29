@@ -1,7 +1,7 @@
 # Streaming Subscribe (MCP Server)
 
 **Status**: Approved
-**Progress**: 5/22 tasks complete
+**Progress**: 11/22 tasks complete
 **Last Updated**: 2026-03-29
 
 ## Overview
@@ -403,12 +403,12 @@ Agent                    MCP Server (proxy)       Registry
 
 ### Step 2: Redis Pub/Sub Integration
 
-- [ ] Add `PubSubManager` class to registry (`registry/src/hikyaku_registry/pubsub.py`) for subscribing/publishing to `inbox:{agent_id}` channels <!-- completed: -->
-- [ ] Add `pubsub` parameter to `BrokerExecutor.__init__` and wire it up in `create_app()` (`main.py`) <!-- completed: -->
-- [ ] Integrate publish call into `BrokerExecutor._handle_unicast()` after `task_store.save()` <!-- completed: -->
-- [ ] Integrate publish call into `BrokerExecutor._handle_broadcast()` for each recipient <!-- completed: -->
-- [ ] Add unit tests for `PubSubManager` (publish, subscribe, unsubscribe) <!-- completed: -->
-- [ ] Add unit tests for executor publish integration (verify publish called on delivery) <!-- completed: -->
+- [x] Add `PubSubManager` class to registry (`registry/src/hikyaku_registry/pubsub.py`) for subscribing/publishing to `inbox:{agent_id}` channels <!-- completed: 2026-03-29T08:40 -->
+- [x] Add `pubsub` parameter to `BrokerExecutor.__init__` and wire it up in `create_app()` (`main.py`) <!-- completed: 2026-03-29T08:40 -->
+- [x] Integrate publish call into `BrokerExecutor._handle_unicast()` after `task_store.save()` <!-- completed: 2026-03-29T08:40 -->
+- [x] Integrate publish call into `BrokerExecutor._handle_broadcast()` for each recipient <!-- completed: 2026-03-29T08:40 -->
+- [x] Add unit tests for `PubSubManager` (publish, subscribe, unsubscribe) <!-- completed: 2026-03-29T08:40 -->
+- [x] Add unit tests for executor publish integration (verify publish called on delivery) <!-- completed: 2026-03-29T08:40 -->
 
 ### Step 3: Server-side SSE Endpoint
 
