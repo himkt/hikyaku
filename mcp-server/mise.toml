@@ -1,0 +1,18 @@
+[tasks.lint]
+run = [
+  'uv --preview-features format format --diff',
+  'uvx ruff check',
+  'uv run mypy src',
+]
+
+[tasks.format]
+run = [
+  'uv --preview-features format format',
+  'uvx ruff check --fix',
+]
+
+[tasks.dev]
+run = "uv run hikyaku-mcp"
+
+[tasks.test]
+run = 'uv run python -m pytest'
