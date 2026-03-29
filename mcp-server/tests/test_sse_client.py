@@ -28,9 +28,7 @@ SAMPLE_TASK = {
     "id": "task-001",
     "contextId": AGENT_ID,
     "status": {"state": "input-required", "timestamp": "2026-03-28T12:00:00Z"},
-    "artifacts": [
-        {"parts": [{"type": "text", "text": "Hello"}]}
-    ],
+    "artifacts": [{"parts": [{"type": "text", "text": "Hello"}]}],
     "metadata": {
         "fromAgentId": "agent-sender-001",
         "toAgentId": AGENT_ID,

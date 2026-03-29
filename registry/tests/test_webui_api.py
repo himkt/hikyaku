@@ -194,12 +194,16 @@ class TestAgentsList:
     async def test_includes_deregistered_with_messages(self, webui_env):
         """GET /agents includes deregistered agents that still have messages."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
         active = await _setup_agent(store, "Active", api_key=api_key)
-        dereg = await _setup_agent(store, "Deregistered", api_key=api_key, deregister=True)
+        dereg = await _setup_agent(
+            store, "Deregistered", api_key=api_key, deregister=True
+        )
         await _create_task(
             task_store,
             from_agent_id="sender",
@@ -241,7 +245,9 @@ class TestInbox:
     async def test_returns_received_messages(self, webui_env):
         """Inbox returns messages where the agent is the recipient."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -273,7 +279,9 @@ class TestInbox:
     async def test_resolves_agent_names(self, webui_env):
         """Inbox messages include from_agent_name and to_agent_name."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -299,7 +307,9 @@ class TestInbox:
     async def test_filters_broadcast_summary(self, webui_env):
         """Inbox excludes broadcast_summary type tasks."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -332,7 +342,9 @@ class TestInbox:
     async def test_newest_first_order(self, webui_env):
         """Inbox returns messages in newest-first (descending) order."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -386,7 +398,9 @@ class TestInbox:
     async def test_body_empty_when_no_text_part(self, webui_env):
         """Body is empty string when task has no text part in artifacts."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -417,7 +431,9 @@ class TestInbox:
     async def test_message_has_required_fields(self, webui_env):
         """Each message in inbox has all required fields per spec."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -437,9 +453,15 @@ class TestInbox:
         msg = resp.json()["messages"][0]
 
         required_fields = [
-            "task_id", "from_agent_id", "from_agent_name",
-            "to_agent_id", "to_agent_name", "type",
-            "status", "created_at", "body",
+            "task_id",
+            "from_agent_id",
+            "from_agent_name",
+            "to_agent_id",
+            "to_agent_name",
+            "type",
+            "status",
+            "created_at",
+            "body",
         ]
         for field in required_fields:
             assert field in msg, f"Missing field: {field}"
@@ -448,7 +470,9 @@ class TestInbox:
     async def test_status_input_required(self, webui_env):
         """Task with input_required state has status='input_required'."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -472,7 +496,9 @@ class TestInbox:
     async def test_status_completed(self, webui_env):
         """Task with completed state has status='completed'."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -496,7 +522,9 @@ class TestInbox:
     async def test_status_canceled(self, webui_env):
         """Task with canceled state has status='canceled'."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -520,7 +548,9 @@ class TestInbox:
     async def test_message_type_field(self, webui_env):
         """Message type field reflects the task metadata type."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -553,7 +583,9 @@ class TestSent:
     async def test_returns_sent_messages(self, webui_env):
         """Sent returns messages where the agent is the sender."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -585,7 +617,9 @@ class TestSent:
     async def test_resolves_agent_names(self, webui_env):
         """Sent messages include from_agent_name and to_agent_name."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -611,7 +645,9 @@ class TestSent:
     async def test_filters_broadcast_summary(self, webui_env):
         """Sent excludes broadcast_summary type tasks."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -644,7 +680,9 @@ class TestSent:
     async def test_newest_first_order(self, webui_env):
         """Sent returns messages sorted by date descending (newest first)."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -698,7 +736,9 @@ class TestSent:
     async def test_same_response_format_as_inbox(self, webui_env):
         """Sent messages have the same fields as inbox messages."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
@@ -718,9 +758,15 @@ class TestSent:
         msg = resp.json()["messages"][0]
 
         required_fields = [
-            "task_id", "from_agent_id", "from_agent_name",
-            "to_agent_id", "to_agent_name", "type",
-            "status", "created_at", "body",
+            "task_id",
+            "from_agent_id",
+            "from_agent_name",
+            "to_agent_id",
+            "to_agent_name",
+            "type",
+            "status",
+            "created_at",
+            "body",
         ]
         for field in required_fields:
             assert field in msg, f"Missing field: {field}"
@@ -786,7 +832,9 @@ class TestSendMessage:
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
         sender = await _setup_agent(store, "Sender", api_key=api_key)
-        dereg = await _setup_agent(store, "Deregistered", api_key=api_key, deregister=True)
+        dereg = await _setup_agent(
+            store, "Deregistered", api_key=api_key, deregister=True
+        )
 
         resp = await client.post(
             "/ui/api/messages/send",
@@ -997,12 +1045,16 @@ class TestDeregisteredAgentAccess:
     async def test_deregistered_agent_inbox_accessible(self, webui_env):
         """Inbox of a deregistered agent (with messages) is still accessible."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
         active = await _setup_agent(store, "Active Agent", api_key=api_key)
-        dereg = await _setup_agent(store, "Deregistered Agent", api_key=api_key, deregister=True)
+        dereg = await _setup_agent(
+            store, "Deregistered Agent", api_key=api_key, deregister=True
+        )
 
         await _create_task(
             task_store,
@@ -1025,12 +1077,16 @@ class TestDeregisteredAgentAccess:
     async def test_deregistered_agent_sent_accessible(self, webui_env):
         """Sent messages of a deregistered agent are still accessible."""
         store, task_store, client = (
-            webui_env["store"], webui_env["task_store"], webui_env["client"],
+            webui_env["store"],
+            webui_env["task_store"],
+            webui_env["client"],
         )
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
         active = await _setup_agent(store, "Active Agent", api_key=api_key)
-        dereg = await _setup_agent(store, "Deregistered Agent", api_key=api_key, deregister=True)
+        dereg = await _setup_agent(
+            store, "Deregistered Agent", api_key=api_key, deregister=True
+        )
 
         await _create_task(
             task_store,
@@ -1065,7 +1121,9 @@ class TestSendFromDeregistered:
         api_key, tenant_id = webui_env["api_key"], webui_env["tenant_id"]
 
         active = await _setup_agent(store, "Active Agent", api_key=api_key)
-        dereg = await _setup_agent(store, "Deregistered Sender", api_key=api_key, deregister=True)
+        dereg = await _setup_agent(
+            store, "Deregistered Sender", api_key=api_key, deregister=True
+        )
 
         resp = await client.post(
             "/ui/api/messages/send",

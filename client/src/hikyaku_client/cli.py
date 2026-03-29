@@ -89,8 +89,11 @@ def register(ctx, name, description, skills):
 
         result = _run(
             api.register_agent(
-                ctx.obj["url"], name, description,
-                skills=parsed_skills, api_key=api_key,
+                ctx.obj["url"],
+                name,
+                description,
+                skills=parsed_skills,
+                api_key=api_key,
             )
         )
 

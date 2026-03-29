@@ -89,9 +89,7 @@ class RegistryStore:
         self, tenant_id: str | None = None
     ) -> list[AgentListItem]:
         if tenant_id is not None:
-            member_ids = await self._redis.smembers(
-                f"tenant:{tenant_id}:agents"
-            )
+            member_ids = await self._redis.smembers(f"tenant:{tenant_id}:agents")
         else:
             member_ids = await self._redis.smembers("agents:active")
         if not member_ids:
@@ -101,13 +99,15 @@ class RegistryStore:
         for agent_id in member_ids:
             record = await self._redis.hgetall(f"agent:{agent_id}")
             if record and record.get("status") == "active":
-                agents.append({
-                    "agent_id": record["agent_id"],
-                    "name": record["name"],
-                    "description": record["description"],
-                    "registered_at": record["registered_at"],
-                    "agent_card_json": record.get("agent_card_json", "{}"),
-                })
+                agents.append(
+                    {
+                        "agent_id": record["agent_id"],
+                        "name": record["name"],
+                        "description": record["description"],
+                        "registered_at": record["registered_at"],
+                        "agent_card_json": record.get("agent_card_json", "{}"),
+                    }
+                )
         return agents
 
     async def deregister_agent(self, agent_id: str) -> bool:
@@ -128,19 +128,13 @@ class RegistryStore:
 
         return True
 
-    async def verify_agent_tenant(
-        self, agent_id: str, tenant_id: str
-    ) -> bool:
-        api_key_hash = await self._redis.hget(
-            f"agent:{agent_id}", "api_key_hash"
-        )
+    async def verify_agent_tenant(self, agent_id: str, tenant_id: str) -> bool:
+        api_key_hash = await self._redis.hget(f"agent:{agent_id}", "api_key_hash")
         if api_key_hash is None:
             return False
         return api_key_hash == tenant_id
 
-    async def create_api_key(
-        self, owner_sub: str
-    ) -> tuple[str, str, str]:
+    async def create_api_key(self, owner_sub: str) -> tuple[str, str, str]:
         api_key = "hky_" + secrets.token_hex(16)
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
         created_at = datetime.now(UTC).isoformat()
@@ -170,33 +164,27 @@ class RegistryStore:
             record = await self._redis.hgetall(f"apikey:{api_key_hash}")
             if not record:
                 continue
-            agent_count = await self._redis.scard(
-                f"tenant:{api_key_hash}:agents"
+            agent_count = await self._redis.scard(f"tenant:{api_key_hash}:agents")
+            result.append(
+                {
+                    "tenant_id": api_key_hash,
+                    "key_prefix": record["key_prefix"],
+                    "created_at": record["created_at"],
+                    "status": record["status"],
+                    "agent_count": agent_count,
+                }
             )
-            result.append({
-                "tenant_id": api_key_hash,
-                "key_prefix": record["key_prefix"],
-                "created_at": record["created_at"],
-                "status": record["status"],
-                "agent_count": agent_count,
-            })
 
         return result
 
-    async def revoke_api_key(
-        self, tenant_id: str, owner_sub: str
-    ) -> bool:
-        is_owner = await self._redis.sismember(
-            f"account:{owner_sub}:keys", tenant_id
-        )
+    async def revoke_api_key(self, tenant_id: str, owner_sub: str) -> bool:
+        is_owner = await self._redis.sismember(f"account:{owner_sub}:keys", tenant_id)
         if not is_owner:
             return False
 
         await self._redis.hset(f"apikey:{tenant_id}", "status", "revoked")
 
-        agent_ids = await self._redis.smembers(
-            f"tenant:{tenant_id}:agents"
-        )
+        agent_ids = await self._redis.smembers(f"tenant:{tenant_id}:agents")
         for agent_id in agent_ids:
             await self.deregister_agent(agent_id)
 

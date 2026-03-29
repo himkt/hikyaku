@@ -63,11 +63,15 @@ class TestRegisterUsesGlobalApiKey:
             result = runner.invoke(
                 cli,
                 [
-                    "--url", BROKER_URL,
-                    "--api-key", API_KEY,
+                    "--url",
+                    BROKER_URL,
+                    "--api-key",
+                    API_KEY,
                     "register",
-                    "--name", "test-agent",
-                    "--description", "A test agent",
+                    "--name",
+                    "test-agent",
+                    "--description",
+                    "A test agent",
                 ],
             )
 
@@ -100,11 +104,15 @@ class TestRegisterUsesGlobalApiKey:
             result = runner.invoke(
                 cli,
                 [
-                    "--url", BROKER_URL,
-                    "--api-key", API_KEY,
+                    "--url",
+                    BROKER_URL,
+                    "--api-key",
+                    API_KEY,
                     "register",
-                    "--name", "test-agent",
-                    "--description", "A test agent",
+                    "--name",
+                    "test-agent",
+                    "--description",
+                    "A test agent",
                 ],
             )
 
@@ -118,12 +126,16 @@ class TestRegisterUsesGlobalApiKey:
             result = runner.invoke(
                 cli,
                 [
-                    "--url", BROKER_URL,
-                    "--api-key", API_KEY,
+                    "--url",
+                    BROKER_URL,
+                    "--api-key",
+                    API_KEY,
                     "--json",
                     "register",
-                    "--name", "test-agent",
-                    "--description", "A test agent",
+                    "--name",
+                    "test-agent",
+                    "--description",
+                    "A test agent",
                 ],
             )
 
@@ -149,10 +161,13 @@ class TestRegisterMissingApiKey:
         result = runner.invoke(
             cli,
             [
-                "--url", BROKER_URL,
+                "--url",
+                BROKER_URL,
                 "register",
-                "--name", "test-agent",
-                "--description", "A test agent",
+                "--name",
+                "test-agent",
+                "--description",
+                "A test agent",
             ],
         )
 
@@ -163,10 +178,13 @@ class TestRegisterMissingApiKey:
         result = runner.invoke(
             cli,
             [
-                "--url", BROKER_URL,
+                "--url",
+                BROKER_URL,
                 "register",
-                "--name", "test-agent",
-                "--description", "A test agent",
+                "--name",
+                "test-agent",
+                "--description",
+                "A test agent",
             ],
         )
 
@@ -177,10 +195,13 @@ class TestRegisterMissingApiKey:
         result = runner.invoke(
             cli,
             [
-                "--url", BROKER_URL,
+                "--url",
+                BROKER_URL,
                 "register",
-                "--name", "test-agent",
-                "--description", "A test agent",
+                "--name",
+                "test-agent",
+                "--description",
+                "A test agent",
             ],
         )
 
@@ -194,10 +215,13 @@ class TestRegisterMissingApiKey:
             runner.invoke(
                 cli,
                 [
-                    "--url", BROKER_URL,
+                    "--url",
+                    BROKER_URL,
                     "register",
-                    "--name", "test-agent",
-                    "--description", "A test agent",
+                    "--name",
+                    "test-agent",
+                    "--description",
+                    "A test agent",
                 ],
             )
 
@@ -222,12 +246,17 @@ class TestRegisterSpecificApiKeyRemoved:
             result = runner.invoke(
                 cli,
                 [
-                    "--url", BROKER_URL,
-                    "--api-key", API_KEY,
+                    "--url",
+                    BROKER_URL,
+                    "--api-key",
+                    API_KEY,
                     "register",
-                    "--name", "test-agent",
-                    "--description", "A test agent",
-                    "--api-key", "hky_someOtherKey0000000000000000",
+                    "--name",
+                    "test-agent",
+                    "--description",
+                    "A test agent",
+                    "--api-key",
+                    "hky_someOtherKey0000000000000000",
                 ],
             )
 

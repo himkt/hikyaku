@@ -106,9 +106,7 @@ class TestMultiTenantAuth:
         """Valid Bearer + X-Agent-Id with matching tenant returns (agent_id, tenant_id)."""
         agent_id = "agent-tenant-001"
         await _setup_api_key(redis_client, _TEST_API_KEY)
-        tenant_id = await _setup_tenant_agent(
-            redis_client, agent_id, _TEST_API_KEY
-        )
+        tenant_id = await _setup_tenant_agent(redis_client, agent_id, _TEST_API_KEY)
         request = _make_tenant_request(
             authorization=f"Bearer {_TEST_API_KEY}",
             x_agent_id=agent_id,
@@ -119,9 +117,7 @@ class TestMultiTenantAuth:
         assert result == (agent_id, tenant_id)
 
     @pytest.mark.asyncio
-    async def test_tenant_id_equals_sha256_of_api_key(
-        self, redis_client, store
-    ):
+    async def test_tenant_id_equals_sha256_of_api_key(self, redis_client, store):
         """The tenant_id in the returned tuple equals SHA256(api_key)."""
         agent_id = "agent-hash-check"
         await _setup_api_key(redis_client, _TEST_API_KEY)
@@ -138,9 +134,7 @@ class TestMultiTenantAuth:
     @pytest.mark.asyncio
     async def test_missing_authorization_header_raises_401(self, store):
         """Missing Authorization header raises HTTP 401."""
-        request = _make_tenant_request(
-            authorization=None, x_agent_id="agent-001"
-        )
+        request = _make_tenant_request(authorization=None, x_agent_id="agent-001")
 
         with pytest.raises(HTTPException) as exc_info:
             await get_authenticated_agent(request, store)
@@ -148,9 +142,7 @@ class TestMultiTenantAuth:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_missing_x_agent_id_header_raises_401(
-        self, redis_client, store
-    ):
+    async def test_missing_x_agent_id_header_raises_401(self, redis_client, store):
         """Missing X-Agent-Id header raises HTTP 401."""
         request = _make_tenant_request(
             authorization=f"Bearer {_TEST_API_KEY}",
@@ -168,9 +160,7 @@ class TestMultiTenantAuth:
     ):
         """API key with no matching agent record raises HTTP 401."""
         # Agent exists under a different key
-        await _setup_tenant_agent(
-            redis_client, "agent-other", _OTHER_API_KEY
-        )
+        await _setup_tenant_agent(redis_client, "agent-other", _OTHER_API_KEY)
         request = _make_tenant_request(
             authorization=f"Bearer {_TEST_API_KEY}",
             x_agent_id="agent-other",
@@ -188,9 +178,7 @@ class TestMultiTenantAuth:
         The agent's api_key_hash doesn't match SHA256(provided_api_key).
         """
         # Agent registered under OTHER_API_KEY (different tenant)
-        await _setup_tenant_agent(
-            redis_client, "agent-wrong-tenant", _OTHER_API_KEY
-        )
+        await _setup_tenant_agent(redis_client, "agent-wrong-tenant", _OTHER_API_KEY)
         # Request uses TEST_API_KEY but references agent in OTHER tenant
         request = _make_tenant_request(
             authorization=f"Bearer {_TEST_API_KEY}",
@@ -242,9 +230,7 @@ class TestMultiTenantAuth:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_multiple_agents_same_tenant_each_resolves(
-        self, redis_client, store
-    ):
+    async def test_multiple_agents_same_tenant_each_resolves(self, redis_client, store):
         """Multiple agents sharing the same API key each authenticate correctly."""
         await _setup_api_key(redis_client, _TEST_API_KEY)
         agent_ids = ["agent-mt-aaa", "agent-mt-bbb", "agent-mt-ccc"]
@@ -260,18 +246,12 @@ class TestMultiTenantAuth:
             assert result == (aid, _TEST_API_KEY_HASH)
 
     @pytest.mark.asyncio
-    async def test_agents_in_different_tenants_isolated(
-        self, redis_client, store
-    ):
+    async def test_agents_in_different_tenants_isolated(self, redis_client, store):
         """Agents in different tenants cannot authenticate with each other's API key."""
         await _setup_api_key(redis_client, _TEST_API_KEY)
         await _setup_api_key(redis_client, _OTHER_API_KEY)
-        await _setup_tenant_agent(
-            redis_client, "agent-tenant-a", _TEST_API_KEY
-        )
-        await _setup_tenant_agent(
-            redis_client, "agent-tenant-b", _OTHER_API_KEY
-        )
+        await _setup_tenant_agent(redis_client, "agent-tenant-a", _TEST_API_KEY)
+        await _setup_tenant_agent(redis_client, "agent-tenant-b", _OTHER_API_KEY)
 
         # Agent A with its own key → OK
         req_a = _make_tenant_request(
@@ -307,31 +287,23 @@ class TestRegistrationTenant:
     """
 
     @pytest.mark.asyncio
-    async def test_valid_token_existing_tenant_returns_tuple(
-        self, redis_client, store
-    ):
+    async def test_valid_token_existing_tenant_returns_tuple(self, redis_client, store):
         """Valid Bearer with active apikey record returns (api_key, api_key_hash)."""
         await _setup_api_key(redis_client, _TEST_API_KEY)
-        request = _make_tenant_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request = _make_tenant_request(authorization=f"Bearer {_TEST_API_KEY}")
 
         result = await get_registration_tenant(request, store)
 
         assert result == (_TEST_API_KEY, _TEST_API_KEY_HASH)
 
     @pytest.mark.asyncio
-    async def test_valid_token_empty_tenant_raises_401(
-        self, redis_client, store
-    ):
+    async def test_valid_token_empty_tenant_raises_401(self, redis_client, store):
         """Valid Bearer but no apikey record → 401.
 
         An API key without an apikey:{hash} record is not recognized.
         """
         # No apikey record in Redis
-        request = _make_tenant_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request = _make_tenant_request(authorization=f"Bearer {_TEST_API_KEY}")
 
         with pytest.raises(HTTPException) as exc_info:
             await get_registration_tenant(request, store)
@@ -339,15 +311,11 @@ class TestRegistrationTenant:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_valid_token_nonexistent_tenant_raises_401(
-        self, redis_client, store
-    ):
+    async def test_valid_token_nonexistent_tenant_raises_401(self, redis_client, store):
         """Valid Bearer but tenant key doesn't exist at all → 401."""
         # Use a fresh API key that was never used
         fresh_key = "hky_00000000000000000000000000000000"
-        request = _make_tenant_request(
-            authorization=f"Bearer {fresh_key}"
-        )
+        request = _make_tenant_request(authorization=f"Bearer {fresh_key}")
 
         with pytest.raises(HTTPException) as exc_info:
             await get_registration_tenant(request, store)
@@ -365,9 +333,7 @@ class TestRegistrationTenant:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_malformed_auth_empty_token_raises_401(
-        self, redis_client, store
-    ):
+    async def test_malformed_auth_empty_token_raises_401(self, redis_client, store):
         """'Bearer ' with empty token raises HTTP 401."""
         request = _make_tenant_request(authorization="Bearer ")
 
@@ -377,9 +343,7 @@ class TestRegistrationTenant:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_malformed_auth_no_scheme_raises_401(
-        self, redis_client, store
-    ):
+    async def test_malformed_auth_no_scheme_raises_401(self, redis_client, store):
         """Token without scheme prefix raises HTTP 401."""
         request = _make_tenant_request(
             authorization="hky_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
@@ -391,14 +355,10 @@ class TestRegistrationTenant:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_returns_correct_hash_for_api_key(
-        self, redis_client, store
-    ):
+    async def test_returns_correct_hash_for_api_key(self, redis_client, store):
         """The returned api_key_hash is the SHA256 hex digest of the api_key."""
         await _setup_api_key(redis_client, _TEST_API_KEY)
-        request = _make_tenant_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request = _make_tenant_request(authorization=f"Bearer {_TEST_API_KEY}")
 
         api_key, api_key_hash = await get_registration_tenant(request, store)
 

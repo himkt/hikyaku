@@ -40,9 +40,7 @@ def _make_sample_task(task_id: str, timestamp: str = "2026-03-28T12:00:00Z") -> 
         "id": task_id,
         "contextId": AGENT_ID,
         "status": {"state": "input-required", "timestamp": timestamp},
-        "artifacts": [
-            {"parts": [{"type": "text", "text": f"Message {task_id}"}]}
-        ],
+        "artifacts": [{"parts": [{"type": "text", "text": f"Message {task_id}"}]}],
         "metadata": {
             "fromAgentId": OTHER_AGENT_ID,
             "toAgentId": AGENT_ID,
@@ -74,7 +72,9 @@ def mock_forwarder():
     fwd.cancel = AsyncMock(return_value={"task": _make_sample_task("task-canceled")})
     fwd.get_task = AsyncMock(return_value={"task": _make_sample_task("task-001")})
     fwd.agents = AsyncMock(return_value={"agents": []})
-    fwd.register = AsyncMock(return_value={"agent_id": "new-agent", "api_key": "hky_new"})
+    fwd.register = AsyncMock(
+        return_value={"agent_id": "new-agent", "api_key": "hky_new"}
+    )
     fwd.deregister = AsyncMock(return_value={"status": "deregistered"})
     return fwd
 
@@ -238,9 +238,7 @@ class TestBroadcastTool:
     @pytest.mark.asyncio
     async def test_broadcast_returns_forwarder_result(self, mock_forwarder):
         """broadcast tool returns the result from RegistryForwarder."""
-        result = await handle_broadcast(
-            forwarder=mock_forwarder, text="Alert"
-        )
+        result = await handle_broadcast(forwarder=mock_forwarder, text="Alert")
 
         assert "task" in result
 

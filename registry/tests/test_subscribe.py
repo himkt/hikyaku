@@ -68,12 +68,12 @@ async def sse_env():
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        agent_a = await _register_agent(client, "Agent A", "Sender", api_key=_SSE_API_KEY)
+        agent_a = await _register_agent(
+            client, "Agent A", "Sender", api_key=_SSE_API_KEY
+        )
         api_key = agent_a["api_key"]
 
-        agent_b = await _register_agent(
-            client, "Agent B", "Receiver", api_key=api_key
-        )
+        agent_b = await _register_agent(client, "Agent B", "Receiver", api_key=api_key)
 
         yield {
             "client": client,

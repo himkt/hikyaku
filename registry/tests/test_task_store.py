@@ -180,17 +180,13 @@ class TestSave:
         ts1 = datetime(2026, 3, 28, 12, 0, 0, tzinfo=timezone.utc)
         ts2 = datetime(2026, 3, 28, 13, 0, 0, tzinfo=timezone.utc)
 
-        task = _make_task(
-            task_id="task-001", context_id="ctx-1", timestamp=_ts(ts1)
-        )
+        task = _make_task(task_id="task-001", context_id="ctx-1", timestamp=_ts(ts1))
         await task_store.save(task)
 
         score_before = await redis_client.zscore("tasks:ctx:ctx-1", "task-001")
 
         # Update status timestamp and re-save
-        task.status = TaskStatus(
-            state=TaskState.completed, timestamp=_ts(ts2)
-        )
+        task.status = TaskStatus(state=TaskState.completed, timestamp=_ts(ts2))
         await task_store.save(task)
 
         score_after = await redis_client.zscore("tasks:ctx:ctx-1", "task-001")
@@ -344,9 +340,7 @@ class TestDelete:
 
         await task_store.delete("task-001")
 
-        is_member = await redis_client.sismember(
-            "tasks:sender:sender-del", "task-001"
-        )
+        is_member = await redis_client.sismember("tasks:sender:sender-del", "task-001")
         assert not is_member
 
     @pytest.mark.asyncio
@@ -422,9 +416,7 @@ class TestContextSortedSetIndexing:
         )
         await task_store.save(task)
 
-        task.status = TaskStatus(
-            state=TaskState.completed, timestamp=_ts(ts_completed)
-        )
+        task.status = TaskStatus(state=TaskState.completed, timestamp=_ts(ts_completed))
         await task_store.save(task)
 
         score = await redis_client.zscore("tasks:ctx:ctx-rescore", "task-001")

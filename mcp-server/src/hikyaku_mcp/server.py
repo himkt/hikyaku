@@ -48,9 +48,7 @@ async def handle_poll(
     return items
 
 
-async def handle_send(
-    *, forwarder: RegistryForwarder, to: str, text: str
-) -> dict:
+async def handle_send(*, forwarder: RegistryForwarder, to: str, text: str) -> dict:
     """Forward send to RegistryForwarder."""
     return await forwarder.send(to=to, text=text)
 
@@ -70,16 +68,12 @@ async def handle_cancel(*, forwarder: RegistryForwarder, task_id: str) -> dict:
     return await forwarder.cancel(task_id=task_id)
 
 
-async def handle_get_task(
-    *, forwarder: RegistryForwarder, task_id: str
-) -> dict:
+async def handle_get_task(*, forwarder: RegistryForwarder, task_id: str) -> dict:
     """Forward get_task to RegistryForwarder."""
     return await forwarder.get_task(task_id=task_id)
 
 
-async def handle_agents(
-    *, forwarder: RegistryForwarder, id: str | None = None
-) -> dict:
+async def handle_agents(*, forwarder: RegistryForwarder, id: str | None = None) -> dict:
     """Forward agents to RegistryForwarder."""
     return await forwarder.agents(id=id)
 
@@ -122,15 +116,129 @@ def _build_server() -> tuple[Server, SSEClient, RegistryForwarder]:
     @server.list_tools()
     async def list_tools() -> list[Tool]:
         return [
-            Tool(name="poll", description="Poll inbox for messages (returns from local SSE buffer)", inputSchema={"type": "object", "properties": {"since": {"type": "string", "description": "Filter tasks since timestamp"}, "page_size": {"type": "integer", "description": "Max number of tasks to return"}}}),
-            Tool(name="send", description="Send a unicast message to another agent", inputSchema={"type": "object", "properties": {"to": {"type": "string", "description": "Recipient agent ID"}, "text": {"type": "string", "description": "Message text"}}, "required": ["to", "text"]}),
-            Tool(name="broadcast", description="Broadcast a message to all agents in the tenant", inputSchema={"type": "object", "properties": {"text": {"type": "string", "description": "Message text"}}, "required": ["text"]}),
-            Tool(name="ack", description="Acknowledge receipt of a message", inputSchema={"type": "object", "properties": {"task_id": {"type": "string", "description": "Task ID to acknowledge"}}, "required": ["task_id"]}),
-            Tool(name="cancel", description="Cancel (retract) a sent message", inputSchema={"type": "object", "properties": {"task_id": {"type": "string", "description": "Task ID to cancel"}}, "required": ["task_id"]}),
-            Tool(name="get_task", description="Get details of a specific task", inputSchema={"type": "object", "properties": {"task_id": {"type": "string", "description": "Task ID to retrieve"}}, "required": ["task_id"]}),
-            Tool(name="agents", description="List registered agents or get agent detail", inputSchema={"type": "object", "properties": {"id": {"type": "string", "description": "Specific agent ID for detail view"}}}),
-            Tool(name="register", description="Register a new agent with the broker", inputSchema={"type": "object", "properties": {"name": {"type": "string", "description": "Agent name"}, "description": {"type": "string", "description": "Agent description"}, "skills": {"type": "string", "description": "Skills as JSON string"}, "api_key": {"type": "string", "description": "API key to join existing tenant"}}, "required": ["name", "description"]}),
-            Tool(name="deregister", description="Deregister this agent from the broker", inputSchema={"type": "object", "properties": {}}),
+            Tool(
+                name="poll",
+                description="Poll inbox for messages (returns from local SSE buffer)",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "since": {
+                            "type": "string",
+                            "description": "Filter tasks since timestamp",
+                        },
+                        "page_size": {
+                            "type": "integer",
+                            "description": "Max number of tasks to return",
+                        },
+                    },
+                },
+            ),
+            Tool(
+                name="send",
+                description="Send a unicast message to another agent",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "to": {"type": "string", "description": "Recipient agent ID"},
+                        "text": {"type": "string", "description": "Message text"},
+                    },
+                    "required": ["to", "text"],
+                },
+            ),
+            Tool(
+                name="broadcast",
+                description="Broadcast a message to all agents in the tenant",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string", "description": "Message text"}
+                    },
+                    "required": ["text"],
+                },
+            ),
+            Tool(
+                name="ack",
+                description="Acknowledge receipt of a message",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "task_id": {
+                            "type": "string",
+                            "description": "Task ID to acknowledge",
+                        }
+                    },
+                    "required": ["task_id"],
+                },
+            ),
+            Tool(
+                name="cancel",
+                description="Cancel (retract) a sent message",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "task_id": {
+                            "type": "string",
+                            "description": "Task ID to cancel",
+                        }
+                    },
+                    "required": ["task_id"],
+                },
+            ),
+            Tool(
+                name="get_task",
+                description="Get details of a specific task",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "task_id": {
+                            "type": "string",
+                            "description": "Task ID to retrieve",
+                        }
+                    },
+                    "required": ["task_id"],
+                },
+            ),
+            Tool(
+                name="agents",
+                description="List registered agents or get agent detail",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Specific agent ID for detail view",
+                        }
+                    },
+                },
+            ),
+            Tool(
+                name="register",
+                description="Register a new agent with the broker",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Agent name"},
+                        "description": {
+                            "type": "string",
+                            "description": "Agent description",
+                        },
+                        "skills": {
+                            "type": "string",
+                            "description": "Skills as JSON string",
+                        },
+                        "api_key": {
+                            "type": "string",
+                            "description": "API key to join existing tenant",
+                        },
+                    },
+                    "required": ["name", "description"],
+                },
+            ),
+            Tool(
+                name="deregister",
+                description="Deregister this agent from the broker",
+                inputSchema={"type": "object", "properties": {}},
+            ),
         ]
 
     @server.call_tool()
@@ -142,15 +250,21 @@ def _build_server() -> tuple[Server, SSEClient, RegistryForwarder]:
                 since=arguments.get("since"),
             )
         elif name == "send":
-            result = await handle_send(forwarder=forwarder, to=arguments["to"], text=arguments["text"])
+            result = await handle_send(
+                forwarder=forwarder, to=arguments["to"], text=arguments["text"]
+            )
         elif name == "broadcast":
             result = await handle_broadcast(forwarder=forwarder, text=arguments["text"])
         elif name == "ack":
             result = await handle_ack(forwarder=forwarder, task_id=arguments["task_id"])
         elif name == "cancel":
-            result = await handle_cancel(forwarder=forwarder, task_id=arguments["task_id"])
+            result = await handle_cancel(
+                forwarder=forwarder, task_id=arguments["task_id"]
+            )
         elif name == "get_task":
-            result = await handle_get_task(forwarder=forwarder, task_id=arguments["task_id"])
+            result = await handle_get_task(
+                forwarder=forwarder, task_id=arguments["task_id"]
+            )
         elif name == "agents":
             result = await handle_agents(forwarder=forwarder, id=arguments.get("id"))
         elif name == "register":
@@ -173,12 +287,15 @@ def _build_server() -> tuple[Server, SSEClient, RegistryForwarder]:
 
 def main():
     """Entry point for hikyaku-mcp CLI."""
+
     async def _run():
         server, sse_client, _forwarder = _build_server()
         await sse_client.connect()
         try:
             async with stdio_server() as (read_stream, write_stream):
-                await server.run(read_stream, write_stream, server.create_initialization_options())
+                await server.run(
+                    read_stream, write_stream, server.create_initialization_options()
+                )
         finally:
             await sse_client.disconnect()
 

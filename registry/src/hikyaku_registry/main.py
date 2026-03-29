@@ -131,7 +131,9 @@ async def _handle_send_message(
         task_id=message_data.get("taskId"),
     )
 
-    call_context = ServerCallContext(state={"agent_id": agent_id, "tenant_id": tenant_id})
+    call_context = ServerCallContext(
+        state={"agent_id": agent_id, "tenant_id": tenant_id}
+    )
     send_params = MessageSendParams(message=msg)
 
     context = RequestContext(
@@ -184,7 +186,9 @@ async def _handle_get_task(
     from_agent = await registry_store._redis.hget(f"task:{task_id}", "from_agent_id")
     to_agent = await registry_store._redis.hget(f"task:{task_id}", "to_agent_id")
 
-    from_ok = from_agent and await registry_store.verify_agent_tenant(from_agent, tenant_id)
+    from_ok = from_agent and await registry_store.verify_agent_tenant(
+        from_agent, tenant_id
+    )
     to_ok = to_agent and await registry_store.verify_agent_tenant(to_agent, tenant_id)
     if not from_ok and not to_ok:
         raise ValueError(f"Task {task_id} not found")
@@ -200,7 +204,9 @@ async def _handle_cancel_task(
     if not task_id:
         raise ValueError("Missing task id")
 
-    call_context = ServerCallContext(state={"agent_id": agent_id, "tenant_id": tenant_id})
+    call_context = ServerCallContext(
+        state={"agent_id": agent_id, "tenant_id": tenant_id}
+    )
     context = RequestContext(
         task_id=task_id,
         call_context=call_context,
@@ -246,7 +252,8 @@ async def _handle_list_tasks(
 
     # Filter out broadcast summary tasks (not actual messages)
     tasks = [
-        t for t in tasks
+        t
+        for t in tasks
         if not (t.metadata and t.metadata.get("type") == "broadcast_summary")
     ]
 
@@ -256,7 +263,9 @@ async def _handle_list_tasks(
     return {"tasks": [_task_to_dict(t) for t in tasks]}
 
 
-def create_app(redis: aioredis.Redis | None = None, webui_dist_dir: str | None = None) -> FastAPI:
+def create_app(
+    redis: aioredis.Redis | None = None, webui_dist_dir: str | None = None
+) -> FastAPI:
     app = FastAPI(title="Hikyaku Broker", version="0.1.0", lifespan=lifespan)
     app.include_router(registry_router, prefix="/api/v1")
     app.include_router(subscribe_router, prefix="/api/v1")
@@ -295,9 +304,7 @@ def create_app(redis: aioredis.Redis | None = None, webui_dist_dir: str | None =
 
     @app.get("/.well-known/agent-card.json")
     async def get_agent_card():
-        return JSONResponse(
-            agent_card.model_dump(mode="json", by_alias=True)
-        )
+        return JSONResponse(agent_card.model_dump(mode="json", by_alias=True))
 
     # JSON-RPC endpoint for A2A operations
     @app.post("/")
@@ -305,31 +312,21 @@ def create_app(redis: aioredis.Redis | None = None, webui_dist_dir: str | None =
         # Authenticate: extract Bearer token and X-Agent-Id header
         auth_header = request.headers.get("authorization", "")
         parts = auth_header.split(" ", 1)
-        token = (
-            parts[1].strip()
-            if len(parts) == 2 and parts[0] == "Bearer"
-            else ""
-        )
+        token = parts[1].strip() if len(parts) == 2 and parts[0] == "Bearer" else ""
         if not token:
-            return JSONResponse(
-                status_code=401, content={"error": "Unauthorized"}
-            )
+            return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
         tenant_id = hashlib.sha256(token.encode()).hexdigest()
         agent_id = request.headers.get("x-agent-id")
         if not agent_id:
-            return JSONResponse(
-                status_code=401, content={"error": "Unauthorized"}
-            )
+            return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
         # Verify agent belongs to tenant
         agent_key_hash = await registry_store._redis.hget(
             f"agent:{agent_id}", "api_key_hash"
         )
         if agent_key_hash is None or agent_key_hash != tenant_id:
-            return JSONResponse(
-                status_code=401, content={"error": "Unauthorized"}
-            )
+            return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
         # Parse JSON-RPC request
         body = await request.json()
@@ -352,9 +349,7 @@ def create_app(redis: aioredis.Redis | None = None, webui_dist_dir: str | None =
                     executor, agent_id, tenant_id, params
                 )
             elif method == "ListTasks":
-                result = await _handle_list_tasks(
-                    task_store, agent_id, params
-                )
+                result = await _handle_list_tasks(task_store, agent_id, params)
             else:
                 return _jsonrpc_error(-32601, "Method not found", req_id)
 

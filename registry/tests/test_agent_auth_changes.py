@@ -103,9 +103,7 @@ class TestAuthenticatedAgentKeyStatus:
     """
 
     @pytest.mark.asyncio
-    async def test_active_key_authenticates_successfully(
-        self, redis_client, store
-    ):
+    async def test_active_key_authenticates_successfully(self, redis_client, store):
         """Active API key with valid agent returns (agent_id, tenant_id)."""
         agent_id = "agent-active-key"
         await _setup_api_key(redis_client, _TEST_API_KEY, _TEST_OWNER_SUB)
@@ -140,9 +138,7 @@ class TestAuthenticatedAgentKeyStatus:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_nonexistent_key_record_raises_401(
-        self, redis_client, store
-    ):
+    async def test_nonexistent_key_record_raises_401(self, redis_client, store):
         """API key with no apikey:{hash} record raises 401."""
         agent_id = "agent-no-key-record"
         # Set up agent but do NOT create apikey:{hash} record
@@ -159,9 +155,7 @@ class TestAuthenticatedAgentKeyStatus:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_key_status_checked_before_agent_lookup(
-        self, redis_client, store
-    ):
+    async def test_key_status_checked_before_agent_lookup(self, redis_client, store):
         """Key status check happens first — revoked key fails before agent lookup."""
         # Only create key record (revoked), no agent record at all
         await _setup_api_key(
@@ -179,9 +173,7 @@ class TestAuthenticatedAgentKeyStatus:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_active_key_still_validates_agent(
-        self, redis_client, store
-    ):
+    async def test_active_key_still_validates_agent(self, redis_client, store):
         """Active key still requires valid agent_id and matching tenant."""
         await _setup_api_key(redis_client, _TEST_API_KEY, _TEST_OWNER_SUB)
         # No agent set up
@@ -197,9 +189,7 @@ class TestAuthenticatedAgentKeyStatus:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_active_key_wrong_agent_tenant_raises_401(
-        self, redis_client, store
-    ):
+    async def test_active_key_wrong_agent_tenant_raises_401(self, redis_client, store):
         """Active key with agent from a different tenant raises 401."""
         other_key = "hky_ffffffffffffffffffffffffffffffff"
         await _setup_api_key(redis_client, _TEST_API_KEY, _TEST_OWNER_SUB)
@@ -243,9 +233,7 @@ class TestRegistrationTenantRequiresAuth:
         """Valid Bearer with active apikey:{hash} returns (api_key, api_key_hash)."""
         await _setup_api_key(redis_client, _TEST_API_KEY, _TEST_OWNER_SUB)
 
-        request = _make_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request = _make_request(authorization=f"Bearer {_TEST_API_KEY}")
 
         result = await get_registration_tenant(request, store)
 
@@ -258,9 +246,7 @@ class TestRegistrationTenantRequiresAuth:
             redis_client, _TEST_API_KEY, _TEST_OWNER_SUB, status="revoked"
         )
 
-        request = _make_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request = _make_request(authorization=f"Bearer {_TEST_API_KEY}")
 
         with pytest.raises(HTTPException) as exc_info:
             await get_registration_tenant(request, store)
@@ -270,9 +256,7 @@ class TestRegistrationTenantRequiresAuth:
     @pytest.mark.asyncio
     async def test_nonexistent_key_raises_401(self, redis_client, store):
         """API key with no apikey:{hash} record raises 401."""
-        request = _make_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request = _make_request(authorization=f"Bearer {_TEST_API_KEY}")
 
         with pytest.raises(HTTPException) as exc_info:
             await get_registration_tenant(request, store)
@@ -289,9 +273,7 @@ class TestRegistrationTenantRequiresAuth:
 
         # With auth + active key → returns tuple
         await _setup_api_key(redis_client, _TEST_API_KEY, _TEST_OWNER_SUB)
-        request_auth = _make_request(
-            authorization=f"Bearer {_TEST_API_KEY}"
-        )
+        request_auth = _make_request(authorization=f"Bearer {_TEST_API_KEY}")
         result = await get_registration_tenant(request_auth, store)
         assert isinstance(result, tuple)
         assert len(result) == 2
@@ -412,9 +394,7 @@ class TestRegisterAgentEndpoint:
         app.dependency_overrides[get_registry_store] = lambda: store
 
         transport = ASGITransport(app=app)
-        async with AsyncClient(
-            transport=transport, base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             yield {
                 "client": client,
                 "store": store,
@@ -459,9 +439,7 @@ class TestRegisterAgentEndpoint:
         """POST /api/v1/agents with revoked API key returns 401."""
         client, redis = reg_env["client"], reg_env["redis"]
 
-        await _setup_api_key(
-            redis, _TEST_API_KEY, _TEST_OWNER_SUB, status="revoked"
-        )
+        await _setup_api_key(redis, _TEST_API_KEY, _TEST_OWNER_SUB, status="revoked")
 
         resp = await client.post(
             "/api/v1/agents",

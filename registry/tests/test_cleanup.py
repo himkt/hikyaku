@@ -50,7 +50,9 @@ _CLEANUP_API_KEY = "hky_cleanuptestKEYKEYKEYKEYKEYKEY"
 
 async def _register_and_deregister(store, redis, name="Expired Agent", days_ago=10):
     """Register an agent, deregister it, and backdate deregistered_at."""
-    result = await store.create_agent(name=name, description="Will be cleaned up", api_key=_CLEANUP_API_KEY)
+    result = await store.create_agent(
+        name=name, description="Will be cleaned up", api_key=_CLEANUP_API_KEY
+    )
     agent_id = result["agent_id"]
     await store.deregister_agent(agent_id)
 
@@ -65,22 +67,34 @@ async def _create_task_for_agent(redis, task_store, agent_id, sender_id="sender-
     """Create a task record addressed to agent_id."""
     task_id = str(uuid.uuid4())
 
-    task_json = json.dumps({
-        "id": task_id,
-        "contextId": agent_id,
-        "status": {"state": "input-required", "timestamp": datetime.now(timezone.utc).isoformat()},
-        "artifacts": [],
-        "metadata": {"fromAgentId": sender_id, "toAgentId": agent_id, "type": "unicast"},
-    })
+    task_json = json.dumps(
+        {
+            "id": task_id,
+            "contextId": agent_id,
+            "status": {
+                "state": "input-required",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+            "artifacts": [],
+            "metadata": {
+                "fromAgentId": sender_id,
+                "toAgentId": agent_id,
+                "type": "unicast",
+            },
+        }
+    )
 
     # Store task hash
-    await redis.hset(f"task:{task_id}", mapping={
-        "task_json": task_json,
-        "from_agent_id": sender_id,
-        "to_agent_id": agent_id,
-        "type": "unicast",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
+    await redis.hset(
+        f"task:{task_id}",
+        mapping={
+            "task_json": task_json,
+            "from_agent_id": sender_id,
+            "to_agent_id": agent_id,
+            "type": "unicast",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
 
     # Add to context sorted set
     await redis.zadd(
@@ -119,7 +133,9 @@ class TestCleanupExpiredAgents:
     async def test_deletes_task_hashes(self, cleanup_env):
         """All task:{task_id} hashes for the expired agent are deleted."""
         redis, store, task_store = (
-            cleanup_env["redis"], cleanup_env["store"], cleanup_env["task_store"],
+            cleanup_env["redis"],
+            cleanup_env["store"],
+            cleanup_env["task_store"],
         )
 
         result = await _register_and_deregister(store, redis, days_ago=10)
@@ -137,7 +153,9 @@ class TestCleanupExpiredAgents:
     async def test_deletes_context_sorted_set(self, cleanup_env):
         """The tasks:ctx:{agent_id} sorted set is deleted."""
         redis, store, task_store = (
-            cleanup_env["redis"], cleanup_env["store"], cleanup_env["task_store"],
+            cleanup_env["redis"],
+            cleanup_env["store"],
+            cleanup_env["task_store"],
         )
 
         result = await _register_and_deregister(store, redis, days_ago=10)
@@ -154,7 +172,9 @@ class TestCleanupExpiredAgents:
     async def test_removes_task_ids_from_sender_sets(self, cleanup_env):
         """Task IDs are removed from relevant tasks:sender:* sets."""
         redis, store, task_store = (
-            cleanup_env["redis"], cleanup_env["store"], cleanup_env["task_store"],
+            cleanup_env["redis"],
+            cleanup_env["store"],
+            cleanup_env["task_store"],
         )
 
         result = await _register_and_deregister(store, redis, days_ago=10)
@@ -212,7 +232,9 @@ class TestCleanupRetentionPeriod:
         """Active (not deregistered) agents are never cleaned up."""
         redis, store = cleanup_env["redis"], cleanup_env["store"]
 
-        result = await store.create_agent(name="Active Agent", description="Still active", api_key=_CLEANUP_API_KEY)
+        result = await store.create_agent(
+            name="Active Agent", description="Still active", api_key=_CLEANUP_API_KEY
+        )
         agent_id = result["agent_id"]
 
         await cleanup_expired_agents(redis, ttl_days=7)
@@ -263,14 +285,20 @@ class TestCleanupIsolation:
     async def test_does_not_affect_other_agents_tasks(self, cleanup_env):
         """Cleanup of one agent does not affect tasks for other agents."""
         redis, store, task_store = (
-            cleanup_env["redis"], cleanup_env["store"], cleanup_env["task_store"],
+            cleanup_env["redis"],
+            cleanup_env["store"],
+            cleanup_env["task_store"],
         )
 
         # Agent A: expired, will be cleaned
-        _expired = await _register_and_deregister(store, redis, name="Expired", days_ago=10)
+        _expired = await _register_and_deregister(
+            store, redis, name="Expired", days_ago=10
+        )
 
         # Agent B: active, has tasks
-        active = await store.create_agent(name="Active Agent", description="Active", api_key=_CLEANUP_API_KEY)
+        active = await store.create_agent(
+            name="Active Agent", description="Active", api_key=_CLEANUP_API_KEY
+        )
         active_task_id = await _create_task_for_agent(
             redis, task_store, active["agent_id"]
         )
@@ -279,29 +307,35 @@ class TestCleanupIsolation:
 
         # Active agent's task should still exist
         assert await redis.exists(f"task:{active_task_id}")
-        score = await redis.zscore(
-            f"tasks:ctx:{active['agent_id']}", active_task_id
-        )
+        score = await redis.zscore(f"tasks:ctx:{active['agent_id']}", active_task_id)
         assert score is not None
 
     @pytest.mark.asyncio
     async def test_does_not_affect_sender_sets_of_other_tasks(self, cleanup_env):
         """Sender set entries for non-expired tasks are preserved."""
         redis, store, task_store = (
-            cleanup_env["redis"], cleanup_env["store"], cleanup_env["task_store"],
+            cleanup_env["redis"],
+            cleanup_env["store"],
+            cleanup_env["task_store"],
         )
 
-        sender = await store.create_agent(name="Sender", description="Sends msgs", api_key=_CLEANUP_API_KEY)
+        sender = await store.create_agent(
+            name="Sender", description="Sends msgs", api_key=_CLEANUP_API_KEY
+        )
         sender_id = sender["agent_id"]
 
         # Create task for an active agent from this sender
-        active = await store.create_agent(name="Active Recv", description="Active", api_key=_CLEANUP_API_KEY)
+        active = await store.create_agent(
+            name="Active Recv", description="Active", api_key=_CLEANUP_API_KEY
+        )
         active_task = await _create_task_for_agent(
             redis, task_store, active["agent_id"], sender_id=sender_id
         )
 
         # Create task for an expired agent from the same sender
-        expired = await _register_and_deregister(store, redis, name="Expired Recv", days_ago=10)
+        expired = await _register_and_deregister(
+            store, redis, name="Expired Recv", days_ago=10
+        )
         expired_task = await _create_task_for_agent(
             redis, task_store, expired["agent_id"], sender_id=sender_id
         )
@@ -335,8 +369,12 @@ class TestCleanupNoOp:
         """Cleanup with only active agents returns 0."""
         redis, store = cleanup_env["redis"], cleanup_env["store"]
 
-        await store.create_agent(name="Active 1", description="Active", api_key=_CLEANUP_API_KEY)
-        await store.create_agent(name="Active 2", description="Active", api_key=_CLEANUP_API_KEY)
+        await store.create_agent(
+            name="Active 1", description="Active", api_key=_CLEANUP_API_KEY
+        )
+        await store.create_agent(
+            name="Active 2", description="Active", api_key=_CLEANUP_API_KEY
+        )
 
         count = await cleanup_expired_agents(redis, ttl_days=7)
         assert count == 0
@@ -358,7 +396,9 @@ class TestCleanupNoOp:
     async def test_idempotent_second_run_returns_zero(self, cleanup_env):
         """Running cleanup twice: second run returns 0 (already cleaned)."""
         redis, store, task_store = (
-            cleanup_env["redis"], cleanup_env["store"], cleanup_env["task_store"],
+            cleanup_env["redis"],
+            cleanup_env["store"],
+            cleanup_env["task_store"],
         )
 
         result = await _register_and_deregister(store, redis, days_ago=10)
@@ -379,13 +419,17 @@ _CLEANUP_TENANT_KEY = "hky_cleanupTenantKEYKEYKEYKEYKEYK"
 _CLEANUP_TENANT_HASH = hashlib.sha256(_CLEANUP_TENANT_KEY.encode()).hexdigest()
 
 
-async def _register_tenant_agent_and_expire(store, redis, api_key, name="Expired", days_ago=10):
+async def _register_tenant_agent_and_expire(
+    store, redis, api_key, name="Expired", days_ago=10
+):
     """Register an agent in a tenant, then mark as expired without full deregistration.
 
     Simulates an agent that needs cleanup — the agent is deregistered
     but still present in the tenant set (defensive cleanup scenario).
     """
-    result = await store.create_agent(name=name, description="Will expire", api_key=api_key)
+    result = await store.create_agent(
+        name=name, description="Will expire", api_key=api_key
+    )
     agent_id = result["agent_id"]
     api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
@@ -416,21 +460,15 @@ class TestCleanupTenantSet:
         agent_id = result["agent_id"]
 
         # Verify agent is still in tenant set before cleanup
-        assert await redis.sismember(
-            f"tenant:{tenant_hash}:agents", agent_id
-        )
+        assert await redis.sismember(f"tenant:{tenant_hash}:agents", agent_id)
 
         await cleanup_expired_agents(redis, ttl_days=7)
 
         # Verify agent is removed from tenant set after cleanup
-        assert not await redis.sismember(
-            f"tenant:{tenant_hash}:agents", agent_id
-        )
+        assert not await redis.sismember(f"tenant:{tenant_hash}:agents", agent_id)
 
     @pytest.mark.asyncio
-    async def test_cleanup_does_not_affect_other_tenant_members(
-        self, cleanup_env
-    ):
+    async def test_cleanup_does_not_affect_other_tenant_members(self, cleanup_env):
         """Cleanup of one agent doesn't remove other agents from the tenant set."""
         redis, store = cleanup_env["redis"], cleanup_env["store"]
 
@@ -447,18 +485,14 @@ class TestCleanupTenantSet:
         await cleanup_expired_agents(redis, ttl_days=7)
 
         # Active agent still in tenant set
-        assert await redis.sismember(
-            f"tenant:{tenant_hash}:agents", active["agent_id"]
-        )
+        assert await redis.sismember(f"tenant:{tenant_hash}:agents", active["agent_id"])
         # Expired agent removed
         assert not await redis.sismember(
             f"tenant:{tenant_hash}:agents", expired["agent_id"]
         )
 
     @pytest.mark.asyncio
-    async def test_cleanup_does_not_affect_other_tenant_sets(
-        self, cleanup_env
-    ):
+    async def test_cleanup_does_not_affect_other_tenant_sets(self, cleanup_env):
         """Cleanup in one tenant doesn't affect a different tenant's set."""
         redis, store = cleanup_env["redis"], cleanup_env["store"]
         other_key = "hky_otherCleanupTenantKEYKEYKEYKE"
@@ -482,9 +516,7 @@ class TestCleanupTenantSet:
         )
 
     @pytest.mark.asyncio
-    async def test_cleanup_within_retention_preserves_tenant_set(
-        self, cleanup_env
-    ):
+    async def test_cleanup_within_retention_preserves_tenant_set(self, cleanup_env):
         """Agent within retention period is NOT removed from tenant set."""
         redis, store = cleanup_env["redis"], cleanup_env["store"]
 
@@ -495,6 +527,4 @@ class TestCleanupTenantSet:
         await cleanup_expired_agents(redis, ttl_days=7)
 
         # Still in tenant set (within retention)
-        assert await redis.sismember(
-            f"tenant:{tenant_hash}:agents", result["agent_id"]
-        )
+        assert await redis.sismember(f"tenant:{tenant_hash}:agents", result["agent_id"])

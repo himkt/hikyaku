@@ -71,9 +71,7 @@ class TestCreateApiKey:
     @pytest.mark.asyncio
     async def test_stores_apikey_record_in_redis(self, store, redis_client):
         """apikey:{hash} Redis Hash is created with correct fields."""
-        api_key, api_key_hash, created_at = await store.create_api_key(
-            _OWNER_SUB_A
-        )
+        api_key, api_key_hash, created_at = await store.create_api_key(_OWNER_SUB_A)
 
         record = await redis_client.hgetall(f"apikey:{api_key_hash}")
         assert record["owner_sub"] == _OWNER_SUB_A
@@ -86,9 +84,7 @@ class TestCreateApiKey:
         """key_prefix stored in Redis is the first 8 characters of raw key."""
         api_key, api_key_hash, _ = await store.create_api_key(_OWNER_SUB_A)
 
-        key_prefix = await redis_client.hget(
-            f"apikey:{api_key_hash}", "key_prefix"
-        )
+        key_prefix = await redis_client.hget(f"apikey:{api_key_hash}", "key_prefix")
         assert key_prefix == api_key[:8]
         assert key_prefix.startswith("hky_")
         assert len(key_prefix) == 8
@@ -112,18 +108,14 @@ class TestCreateApiKey:
         assert is_member
 
     @pytest.mark.asyncio
-    async def test_multiple_keys_same_owner_all_in_set(
-        self, store, redis_client
-    ):
+    async def test_multiple_keys_same_owner_all_in_set(self, store, redis_client):
         """Multiple keys for the same owner all appear in account set."""
         hashes = []
         for _ in range(3):
             _, h, _ = await store.create_api_key(_OWNER_SUB_A)
             hashes.append(h)
 
-        members = await redis_client.smembers(
-            f"account:{_OWNER_SUB_A}:keys"
-        )
+        members = await redis_client.smembers(f"account:{_OWNER_SUB_A}:keys")
         for h in hashes:
             assert h in members
         assert len(members) == 3
@@ -139,19 +131,13 @@ class TestCreateApiKey:
         assert len(set(hashes)) == 3
 
     @pytest.mark.asyncio
-    async def test_different_owners_separate_sets(
-        self, store, redis_client
-    ):
+    async def test_different_owners_separate_sets(self, store, redis_client):
         """Keys from different owners go into separate account sets."""
         _, hash_a, _ = await store.create_api_key(_OWNER_SUB_A)
         _, hash_b, _ = await store.create_api_key(_OWNER_SUB_B)
 
-        members_a = await redis_client.smembers(
-            f"account:{_OWNER_SUB_A}:keys"
-        )
-        members_b = await redis_client.smembers(
-            f"account:{_OWNER_SUB_B}:keys"
-        )
+        members_a = await redis_client.smembers(f"account:{_OWNER_SUB_A}:keys")
+        members_b = await redis_client.smembers(f"account:{_OWNER_SUB_B}:keys")
 
         assert hash_a in members_a
         assert hash_a not in members_b
@@ -181,9 +167,7 @@ class TestListApiKeys:
     @pytest.mark.asyncio
     async def test_returns_single_key(self, store):
         """Single key returned with correct fields."""
-        api_key, api_key_hash, created_at = await store.create_api_key(
-            _OWNER_SUB_A
-        )
+        api_key, api_key_hash, created_at = await store.create_api_key(_OWNER_SUB_A)
 
         keys = await store.list_api_keys(_OWNER_SUB_A)
 
@@ -233,12 +217,8 @@ class TestListApiKeys:
         api_key, api_key_hash, _ = await store.create_api_key(_OWNER_SUB_A)
 
         # Register agents under this key's tenant
-        await store.create_agent(
-            name="Agent 1", description="Test", api_key=api_key
-        )
-        await store.create_agent(
-            name="Agent 2", description="Test", api_key=api_key
-        )
+        await store.create_agent(name="Agent 1", description="Test", api_key=api_key)
+        await store.create_agent(name="Agent 2", description="Test", api_key=api_key)
 
         keys = await store.list_api_keys(_OWNER_SUB_A)
 
@@ -304,9 +284,7 @@ class TestRevokeApiKey:
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_deregisters_all_tenant_agents(
-        self, store, redis_client
-    ):
+    async def test_deregisters_all_tenant_agents(self, store, redis_client):
         """All agents under the tenant are deregistered."""
         api_key, api_key_hash, _ = await store.create_api_key(_OWNER_SUB_A)
 
@@ -320,12 +298,8 @@ class TestRevokeApiKey:
         await store.revoke_api_key(api_key_hash, _OWNER_SUB_A)
 
         # Agents should be deregistered
-        status1 = await redis_client.hget(
-            f"agent:{r1['agent_id']}", "status"
-        )
-        status2 = await redis_client.hget(
-            f"agent:{r2['agent_id']}", "status"
-        )
+        status1 = await redis_client.hget(f"agent:{r1['agent_id']}", "status")
+        status2 = await redis_client.hget(f"agent:{r2['agent_id']}", "status")
         assert status1 == "deregistered"
         assert status2 == "deregistered"
 
@@ -342,9 +316,7 @@ class TestRevokeApiKey:
 
         await store.revoke_api_key(api_key_hash, _OWNER_SUB_A)
 
-        is_active = await redis_client.sismember(
-            "agents:active", r1["agent_id"]
-        )
+        is_active = await redis_client.sismember("agents:active", r1["agent_id"])
         assert not is_active
 
     @pytest.mark.asyncio
@@ -359,23 +331,17 @@ class TestRevokeApiKey:
     @pytest.mark.asyncio
     async def test_nonexistent_key_fails(self, store):
         """Revoking a non-existent key fails."""
-        result = await store.revoke_api_key(
-            "nonexistent_hash_value", _OWNER_SUB_A
-        )
+        result = await store.revoke_api_key("nonexistent_hash_value", _OWNER_SUB_A)
 
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_does_not_affect_other_tenants(
-        self, store, redis_client
-    ):
+    async def test_does_not_affect_other_tenants(self, store, redis_client):
         """Revoking one key does not affect agents in other tenants."""
         api_key_a, hash_a, _ = await store.create_api_key(_OWNER_SUB_A)
         api_key_b, hash_b, _ = await store.create_api_key(_OWNER_SUB_A)
 
-        await store.create_agent(
-            name="Agent A", description="Test", api_key=api_key_a
-        )
+        await store.create_agent(name="Agent A", description="Test", api_key=api_key_a)
         r_b = await store.create_agent(
             name="Agent B", description="Test", api_key=api_key_b
         )
@@ -383,9 +349,7 @@ class TestRevokeApiKey:
         await store.revoke_api_key(hash_a, _OWNER_SUB_A)
 
         # Agent B should still be active
-        status = await redis_client.hget(
-            f"agent:{r_b['agent_id']}", "status"
-        )
+        status = await redis_client.hget(f"agent:{r_b['agent_id']}", "status")
         assert status == "active"
 
     @pytest.mark.asyncio
@@ -400,9 +364,7 @@ class TestRevokeApiKey:
         assert status == "revoked"
 
     @pytest.mark.asyncio
-    async def test_key_remains_in_account_set_after_revoke(
-        self, store, redis_client
-    ):
+    async def test_key_remains_in_account_set_after_revoke(self, store, redis_client):
         """Revoked key hash stays in account:{sub}:keys (for listing)."""
         _, api_key_hash, _ = await store.create_api_key(_OWNER_SUB_A)
 

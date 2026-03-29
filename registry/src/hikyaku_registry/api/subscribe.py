@@ -54,15 +54,11 @@ async def event_generator(
                 break
             try:
                 timeout = min(_poll_interval, _keepalive_interval)
-                msg = await asyncio.wait_for(
-                    subscription.__anext__(), timeout=timeout
-                )
+                msg = await asyncio.wait_for(subscription.__anext__(), timeout=timeout)
                 # msg is a task_id; fetch the full Task
                 task = await task_store.get(msg)
                 if task is not None:
-                    task_json = json.dumps(
-                        task.model_dump(mode="json", by_alias=True)
-                    )
+                    task_json = json.dumps(task.model_dump(mode="json", by_alias=True))
                     yield f"event: message\nid: {msg}\ndata: {task_json}\n\n"
                 last_keepalive = time.monotonic()
             except asyncio.TimeoutError:

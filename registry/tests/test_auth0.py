@@ -172,13 +172,9 @@ class TestVerifyAuth0User:
         request.scope = {}
         return request
 
-    def _make_cred(
-        self, token: str = _TEST_JWT_TOKEN
-    ) -> HTTPAuthorizationCredentials:
+    def _make_cred(self, token: str = _TEST_JWT_TOKEN) -> HTTPAuthorizationCredentials:
         """Create HTTPAuthorizationCredentials."""
-        return HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials=token
-        )
+        return HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
     # --- Valid JWT ---
 
@@ -192,9 +188,7 @@ class TestVerifyAuth0User:
         """Valid JWT: decoded token stored in request.scope['auth0']."""
         mock_settings.auth0_client_id = _TEST_AUTH0_CLIENT_ID
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.return_value = _TEST_DECODED_TOKEN
 
         request = self._make_request()
@@ -212,9 +206,7 @@ class TestVerifyAuth0User:
         """Valid JWT: raw token string stored in request.scope['token']."""
         mock_settings.auth0_client_id = _TEST_AUTH0_CLIENT_ID
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.return_value = _TEST_DECODED_TOKEN
 
         request = self._make_request()
@@ -232,9 +224,7 @@ class TestVerifyAuth0User:
         """JWT decoded with RS256 algorithm and auth0_client_id as audience."""
         mock_settings.auth0_client_id = _TEST_AUTH0_CLIENT_ID
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.return_value = _TEST_DECODED_TOKEN
 
         await verify_auth0_user(self._make_request(), self._make_cred())
@@ -261,9 +251,7 @@ class TestVerifyAuth0User:
 
         await verify_auth0_user(self._make_request(), self._make_cred())
 
-        mock_jwks.get_signing_key_from_jwt.assert_called_once_with(
-            _TEST_JWT_TOKEN
-        )
+        mock_jwks.get_signing_key_from_jwt.assert_called_once_with(_TEST_JWT_TOKEN)
 
     # --- Invalid JWT (error cases) ---
 
@@ -273,9 +261,7 @@ class TestVerifyAuth0User:
     async def test_expired_jwt_raises_401(self, mock_get_jwks, mock_decode):
         """Expired JWT raises HTTPException with status 401."""
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.side_effect = pyjwt.exceptions.ExpiredSignatureError()
 
         with pytest.raises(HTTPException) as exc_info:
@@ -289,9 +275,7 @@ class TestVerifyAuth0User:
     async def test_wrong_audience_raises_401(self, mock_get_jwks, mock_decode):
         """JWT with wrong audience raises HTTPException with status 401."""
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.side_effect = pyjwt.exceptions.InvalidAudienceError()
 
         with pytest.raises(HTTPException) as exc_info:
@@ -302,14 +286,10 @@ class TestVerifyAuth0User:
     @pytest.mark.asyncio
     @patch("hikyaku_registry.auth.jwt.decode")
     @patch.object(Auth0Verifier, "get_jwks_client")
-    async def test_invalid_signature_raises_401(
-        self, mock_get_jwks, mock_decode
-    ):
+    async def test_invalid_signature_raises_401(self, mock_get_jwks, mock_decode):
         """JWT with invalid signature raises HTTPException with status 401."""
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.side_effect = pyjwt.exceptions.InvalidSignatureError()
 
         with pytest.raises(HTTPException) as exc_info:
@@ -320,14 +300,10 @@ class TestVerifyAuth0User:
     @pytest.mark.asyncio
     @patch("hikyaku_registry.auth.jwt.decode")
     @patch.object(Auth0Verifier, "get_jwks_client")
-    async def test_generic_invalid_token_raises_401(
-        self, mock_get_jwks, mock_decode
-    ):
+    async def test_generic_invalid_token_raises_401(self, mock_get_jwks, mock_decode):
         """Any InvalidTokenError subclass raises HTTPException 401."""
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.side_effect = pyjwt.exceptions.InvalidTokenError()
 
         with pytest.raises(HTTPException) as exc_info:
@@ -345,9 +321,7 @@ class TestVerifyAuth0User:
     ):
         """401 response includes WWW-Authenticate: Bearer header."""
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.side_effect = pyjwt.exceptions.InvalidTokenError()
 
         with pytest.raises(HTTPException) as exc_info:
@@ -358,14 +332,10 @@ class TestVerifyAuth0User:
     @pytest.mark.asyncio
     @patch("hikyaku_registry.auth.jwt.decode")
     @patch.object(Auth0Verifier, "get_jwks_client")
-    async def test_401_has_descriptive_detail(
-        self, mock_get_jwks, mock_decode
-    ):
+    async def test_401_has_descriptive_detail(self, mock_get_jwks, mock_decode):
         """401 response has 'Invalid authentication credentials' detail."""
         mock_key = MagicMock()
-        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = (
-            mock_key
-        )
+        mock_get_jwks.return_value.get_signing_key_from_jwt.return_value = mock_key
         mock_decode.side_effect = pyjwt.exceptions.InvalidTokenError()
 
         with pytest.raises(HTTPException) as exc_info:
@@ -394,9 +364,11 @@ class TestGetUserId:
 
     def test_returns_sub_claim(self):
         """Returns the sub claim from decoded Auth0 token in scope."""
-        request = self._make_request(scope={
-            "auth0": {"sub": _TEST_SUB},
-        })
+        request = self._make_request(
+            scope={
+                "auth0": {"sub": _TEST_SUB},
+            }
+        )
 
         assert get_user_id(request) == _TEST_SUB
 
@@ -411,9 +383,11 @@ class TestGetUserId:
 
     def test_auth0_without_sub_raises_401(self):
         """request.scope['auth0'] without 'sub' key raises HTTPException 401."""
-        request = self._make_request(scope={
-            "auth0": {"aud": "some-audience"},
-        })
+        request = self._make_request(
+            scope={
+                "auth0": {"aud": "some-audience"},
+            }
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             get_user_id(request)
@@ -422,9 +396,11 @@ class TestGetUserId:
 
     def test_sub_is_none_raises_401(self):
         """request.scope['auth0']['sub'] = None raises HTTPException 401."""
-        request = self._make_request(scope={
-            "auth0": {"sub": None},
-        })
+        request = self._make_request(
+            scope={
+                "auth0": {"sub": None},
+            }
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             get_user_id(request)

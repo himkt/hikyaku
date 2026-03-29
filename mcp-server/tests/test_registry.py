@@ -126,7 +126,9 @@ class TestForwardSend:
         assert body["method"] == "SendMessage"
 
     @pytest.mark.asyncio
-    async def test_send_includes_destination_in_metadata(self, forwarder, mock_httpx_client):
+    async def test_send_includes_destination_in_metadata(
+        self, forwarder, mock_httpx_client
+    ):
         """send() includes destination agent_id in message metadata."""
         await forwarder.send(to=OTHER_AGENT_ID, text="Hello")
 
@@ -165,7 +167,9 @@ class TestForwardBroadcast:
     """Tests for RegistryForwarder.broadcast — SendMessage with destination '*'."""
 
     @pytest.mark.asyncio
-    async def test_broadcast_uses_send_message_method(self, forwarder, mock_httpx_client):
+    async def test_broadcast_uses_send_message_method(
+        self, forwarder, mock_httpx_client
+    ):
         """broadcast() sends JSON-RPC method 'SendMessage'."""
         await forwarder.broadcast(text="Build failed on main")
 
@@ -174,7 +178,9 @@ class TestForwardBroadcast:
         assert body["method"] == "SendMessage"
 
     @pytest.mark.asyncio
-    async def test_broadcast_sets_destination_to_star(self, forwarder, mock_httpx_client):
+    async def test_broadcast_sets_destination_to_star(
+        self, forwarder, mock_httpx_client
+    ):
         """broadcast() sets destination to '*' in message metadata."""
         await forwarder.broadcast(text="Build failed")
 
@@ -230,7 +236,9 @@ class TestForwardCancel:
         assert body["method"] == "CancelTask"
 
     @pytest.mark.asyncio
-    async def test_cancel_includes_task_id_in_params(self, forwarder, mock_httpx_client):
+    async def test_cancel_includes_task_id_in_params(
+        self, forwarder, mock_httpx_client
+    ):
         """cancel() includes task id in params."""
         await forwarder.cancel(task_id="task-001")
 
@@ -257,7 +265,9 @@ class TestForwardGetTask:
         assert body["method"] == "GetTask"
 
     @pytest.mark.asyncio
-    async def test_get_task_includes_task_id_in_params(self, forwarder, mock_httpx_client):
+    async def test_get_task_includes_task_id_in_params(
+        self, forwarder, mock_httpx_client
+    ):
         """get_task() includes task id in params."""
         await forwarder.get_task(task_id="task-001")
 
@@ -275,7 +285,9 @@ class TestForwardRegister:
     """Tests for RegistryForwarder.register — POST /api/v1/agents."""
 
     @pytest.mark.asyncio
-    async def test_register_posts_to_agents_endpoint(self, forwarder, mock_httpx_client):
+    async def test_register_posts_to_agents_endpoint(
+        self, forwarder, mock_httpx_client
+    ):
         """register() posts to /api/v1/agents."""
         mock_response = MagicMock()
         mock_response.status_code = 201
@@ -289,7 +301,9 @@ class TestForwardRegister:
         assert call_args[0][0] == f"{BROKER_URL}/api/v1/agents"
 
     @pytest.mark.asyncio
-    async def test_register_sends_name_and_description(self, forwarder, mock_httpx_client):
+    async def test_register_sends_name_and_description(
+        self, forwarder, mock_httpx_client
+    ):
         """register() sends name and description in request body."""
         mock_response = MagicMock()
         mock_response.status_code = 201
@@ -305,7 +319,9 @@ class TestForwardRegister:
         assert body["description"] == "Test agent"
 
     @pytest.mark.asyncio
-    async def test_register_with_api_key_sends_auth_header(self, forwarder, mock_httpx_client):
+    async def test_register_with_api_key_sends_auth_header(
+        self, forwarder, mock_httpx_client
+    ):
         """register() with api_key sends Authorization header to join tenant."""
         mock_response = MagicMock()
         mock_response.status_code = 201
@@ -365,12 +381,15 @@ class TestForwardAgents:
         assert call_args[0][0] == f"{BROKER_URL}/api/v1/agents"
 
     @pytest.mark.asyncio
-    async def test_agents_detail_gets_specific_agent(self, forwarder, mock_httpx_client):
+    async def test_agents_detail_gets_specific_agent(
+        self, forwarder, mock_httpx_client
+    ):
         """agents(id=...) calls GET /api/v1/agents/{id}."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "agent_id": OTHER_AGENT_ID, "name": "Agent B"
+            "agent_id": OTHER_AGENT_ID,
+            "name": "Agent B",
         }
         mock_response.raise_for_status = MagicMock()
         mock_httpx_client.get.return_value = mock_response

@@ -69,7 +69,13 @@ async def api_env():
     await redis.aclose()
 
 
-async def _register_agent(client, name="Test Agent", description="A test agent", skills=None, api_key=_REG_API_KEY):
+async def _register_agent(
+    client,
+    name="Test Agent",
+    description="A test agent",
+    skills=None,
+    api_key=_REG_API_KEY,
+):
     """Helper: register an agent via POST and return the response data."""
     body = {"name": name, "description": description}
     if skills is not None:
@@ -258,7 +264,9 @@ class TestListAgents:
         r = await store.create_agent(
             name="Detailed Agent",
             description="Has all fields",
-            skills=[{"id": "s1", "name": "Skill 1", "description": "A skill", "tags": []}],
+            skills=[
+                {"id": "s1", "name": "Skill 1", "description": "A skill", "tags": []}
+            ],
             api_key=key,
         )
         _override_auth_as_tenant(app, r["agent_id"], tenant_hash)
@@ -279,8 +287,12 @@ class TestListAgents:
 
         key = "hky_testListExcludeKEYKEYKEYKEYKEYK"
         tenant_hash = hashlib.sha256(key.encode()).hexdigest()
-        r1 = await store.create_agent(name="Active Agent", description="Test", api_key=key)
-        r2 = await store.create_agent(name="Gone Agent", description="Test", api_key=key)
+        r1 = await store.create_agent(
+            name="Active Agent", description="Test", api_key=key
+        )
+        r2 = await store.create_agent(
+            name="Gone Agent", description="Test", api_key=key
+        )
 
         # Deregister one agent via store
         await store.deregister_agent(r2["agent_id"])
@@ -318,7 +330,9 @@ class TestGetAgentDetail:
 
         key = "hky_testGetExistingKEYKEYKEYKEYKEYK"
         tenant_hash = hashlib.sha256(key.encode()).hexdigest()
-        r = await store.create_agent(name="Detail Agent", description="Full detail", api_key=key)
+        r = await store.create_agent(
+            name="Detail Agent", description="Full detail", api_key=key
+        )
         _override_auth_as_tenant(app, r["agent_id"], tenant_hash)
 
         resp = await client.get(f"/api/v1/agents/{r['agent_id']}")
@@ -453,7 +467,9 @@ class TestDeregisterAgent:
         r = await _register_agent(client, name="Existing Agent")
         _override_auth_as(app, r["agent_id"])
 
-        resp = await client.delete("/api/v1/agents/00000000-0000-4000-8000-000000000000")
+        resp = await client.delete(
+            "/api/v1/agents/00000000-0000-4000-8000-000000000000"
+        )
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -462,7 +478,9 @@ class TestDeregisterAgent:
         client, app = api_env["client"], api_env["app"]
         _override_auth_as(app, "some-agent-id")
 
-        resp = await client.delete("/api/v1/agents/00000000-0000-4000-8000-000000000000")
+        resp = await client.delete(
+            "/api/v1/agents/00000000-0000-4000-8000-000000000000"
+        )
         data = resp.json()
 
         assert "error" in data
@@ -522,9 +540,7 @@ class TestRegisterAgentTenant:
         """Registration with active API key succeeds and echoes back the key."""
         client = api_env["client"]
 
-        resp = await _register_agent_with_key(
-            client, _REG_API_KEY, name="Tenant Agent"
-        )
+        resp = await _register_agent_with_key(client, _REG_API_KEY, name="Tenant Agent")
         assert resp.status_code == 201
 
         data = resp.json()
@@ -551,9 +567,7 @@ class TestRegisterAgentTenant:
         # Revoke the key
         await store.revoke_api_key(_REG_API_KEY_HASH, _REG_OWNER_SUB)
 
-        resp = await _register_agent_with_key(
-            client, _REG_API_KEY, name="Late Agent"
-        )
+        resp = await _register_agent_with_key(client, _REG_API_KEY, name="Late Agent")
         assert resp.status_code == 401
 
     @pytest.mark.asyncio
@@ -577,15 +591,21 @@ class TestTenantScopedListAgents:
     async def test_list_returns_only_same_tenant_agents(self, api_env):
         """List agents returns only agents in the caller's tenant."""
         client, app, store = (
-            api_env["client"], api_env["app"], api_env["store"],
+            api_env["client"],
+            api_env["app"],
+            api_env["store"],
         )
 
         # Create agents in tenant A
         a1 = await store.create_agent(
-            name="A1", description="Tenant A", api_key="hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA"
+            name="A1",
+            description="Tenant A",
+            api_key="hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA",
         )
         _a2 = await store.create_agent(
-            name="A2", description="Tenant A", api_key="hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA"
+            name="A2",
+            description="Tenant A",
+            api_key="hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA",
         )
         tenant_a_hash = hashlib.sha256(
             b"hky_tenantAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -593,7 +613,9 @@ class TestTenantScopedListAgents:
 
         # Create agent in tenant B
         await store.create_agent(
-            name="B1", description="Tenant B", api_key="hky_tenantBBBBBBBBBBBBBBBBBBBBBBBB"
+            name="B1",
+            description="Tenant B",
+            api_key="hky_tenantBBBBBBBBBBBBBBBBBBBBBBBB",
         )
 
         _override_auth_as_tenant(app, a1["agent_id"], tenant_a_hash)
@@ -629,18 +651,16 @@ class TestTenantScopedGetAgent:
     async def test_get_same_tenant_agent_succeeds(self, api_env):
         """Getting an agent in the same tenant returns 200."""
         client, app, store = (
-            api_env["client"], api_env["app"], api_env["store"],
+            api_env["client"],
+            api_env["app"],
+            api_env["store"],
         )
 
         key = "hky_sameTenantKEYKEYKEYKEYKEYKEYKE"
         tenant_hash = hashlib.sha256(key.encode()).hexdigest()
 
-        a1 = await store.create_agent(
-            name="A1", description="Same tenant", api_key=key
-        )
-        a2 = await store.create_agent(
-            name="A2", description="Same tenant", api_key=key
-        )
+        a1 = await store.create_agent(name="A1", description="Same tenant", api_key=key)
+        a2 = await store.create_agent(name="A2", description="Same tenant", api_key=key)
 
         _override_auth_as_tenant(app, a1["agent_id"], tenant_hash)
 
@@ -652,19 +672,17 @@ class TestTenantScopedGetAgent:
     async def test_get_cross_tenant_agent_returns_404(self, api_env):
         """Getting an agent from a different tenant returns 404."""
         client, app, store = (
-            api_env["client"], api_env["app"], api_env["store"],
+            api_env["client"],
+            api_env["app"],
+            api_env["store"],
         )
 
         key_a = "hky_crossTenantAAAAAAAAAAAAAAAAAA"
         key_b = "hky_crossTenantBBBBBBBBBBBBBBBBBB"
         tenant_a_hash = hashlib.sha256(key_a.encode()).hexdigest()
 
-        a1 = await store.create_agent(
-            name="A1", description="Tenant A", api_key=key_a
-        )
-        b1 = await store.create_agent(
-            name="B1", description="Tenant B", api_key=key_b
-        )
+        a1 = await store.create_agent(name="A1", description="Tenant A", api_key=key_a)
+        b1 = await store.create_agent(name="B1", description="Tenant B", api_key=key_b)
 
         _override_auth_as_tenant(app, a1["agent_id"], tenant_a_hash)
 
@@ -675,19 +693,17 @@ class TestTenantScopedGetAgent:
     async def test_cross_tenant_404_same_as_nonexistent(self, api_env):
         """Cross-tenant 404 looks identical to nonexistent agent 404."""
         client, app, store = (
-            api_env["client"], api_env["app"], api_env["store"],
+            api_env["client"],
+            api_env["app"],
+            api_env["store"],
         )
 
         key_a = "hky_leakCheckAAAAAAAAAAAAAAAAAAAA"
         key_b = "hky_leakCheckBBBBBBBBBBBBBBBBBBBB"
         tenant_a_hash = hashlib.sha256(key_a.encode()).hexdigest()
 
-        a1 = await store.create_agent(
-            name="A1", description="Tenant A", api_key=key_a
-        )
-        b1 = await store.create_agent(
-            name="B1", description="Tenant B", api_key=key_b
-        )
+        a1 = await store.create_agent(name="A1", description="Tenant A", api_key=key_a)
+        b1 = await store.create_agent(name="B1", description="Tenant B", api_key=key_b)
 
         _override_auth_as_tenant(app, a1["agent_id"], tenant_a_hash)
 

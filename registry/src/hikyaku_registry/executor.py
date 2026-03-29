@@ -28,9 +28,7 @@ class BrokerExecutor(AgentExecutor):
         self._task_store = task_store
         self._pubsub = pubsub
 
-    async def execute(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         assert context.call_context is not None
         agent_id = context.call_context.state["agent_id"]
         tenant_id = context.call_context.state.get("tenant_id")
@@ -55,17 +53,13 @@ class BrokerExecutor(AgentExecutor):
         destination = message.metadata["destination"]
 
         if destination == "*":
-            await self._handle_broadcast(
-                event_queue, agent_id, message, tenant_id
-            )
+            await self._handle_broadcast(event_queue, agent_id, message, tenant_id)
         else:
             await self._handle_unicast(
                 event_queue, agent_id, destination, message, tenant_id
             )
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         assert context.call_context is not None
         agent_id = context.call_context.state["agent_id"]
         task_id = context.task_id
@@ -79,9 +73,7 @@ class BrokerExecutor(AgentExecutor):
             raise PermissionError("Only the sender can cancel a task")
 
         if task.status.state != TaskState.input_required:
-            raise ValueError(
-                f"Cannot cancel task in state {task.status.state}"
-            )
+            raise ValueError(f"Cannot cancel task in state {task.status.state}")
 
         now = datetime.now(UTC).isoformat()
         canceled_task = Task(
@@ -118,9 +110,7 @@ class BrokerExecutor(AgentExecutor):
                 destination, tenant_id
             )
             if not is_same_tenant:
-                raise ValueError(
-                    f"Destination agent not found: {destination}"
-                )
+                raise ValueError(f"Destination agent not found: {destination}")
 
         now = datetime.now(UTC).isoformat()
         delivery_task = Task(
@@ -142,9 +132,7 @@ class BrokerExecutor(AgentExecutor):
 
         await self._task_store.save(delivery_task)
         if self._pubsub is not None:
-            await self._pubsub.publish(
-                f"inbox:{destination}", delivery_task.id
-            )
+            await self._pubsub.publish(f"inbox:{destination}", delivery_task.id)
         await event_queue.enqueue_event(delivery_task)
 
     async def _handle_broadcast(
@@ -157,18 +145,14 @@ class BrokerExecutor(AgentExecutor):
         active_agents = await self._registry_store.list_active_agents(
             tenant_id=tenant_id
         )
-        recipients = [
-            a for a in active_agents if a["agent_id"] != from_agent_id
-        ]
+        recipients = [a for a in active_agents if a["agent_id"] != from_agent_id]
 
         for agent in recipients:
             now = datetime.now(UTC).isoformat()
             delivery_task = Task(
                 id=str(uuid.uuid4()),
                 context_id=agent["agent_id"],
-                status=TaskStatus(
-                    state=TaskState.input_required, timestamp=now
-                ),
+                status=TaskStatus(state=TaskState.input_required, timestamp=now),
                 artifacts=[
                     Artifact(
                         artifact_id=str(uuid.uuid4()),
@@ -235,9 +219,7 @@ class BrokerExecutor(AgentExecutor):
             raise PermissionError("Only the recipient can ACK a task")
 
         if task.status.state != TaskState.input_required:
-            raise ValueError(
-                f"Cannot ACK task in state {task.status.state}"
-            )
+            raise ValueError(f"Cannot ACK task in state {task.status.state}")
 
         now = datetime.now(UTC).isoformat()
         completed_task = Task(

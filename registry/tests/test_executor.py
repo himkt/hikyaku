@@ -287,7 +287,10 @@ class TestUnicastSend:
     async def test_error_destination_deregistered(self, env):
         """Sending to a deregistered agent raises an error."""
         executor, store, agent_a, agent_b = (
-            env["executor"], env["store"], env["agent_a"], env["agent_b"],
+            env["executor"],
+            env["store"],
+            env["agent_a"],
+            env["agent_b"],
         )
         queue = EventQueue()
 
@@ -328,8 +331,11 @@ class TestBroadcastSend:
     async def test_creates_delivery_tasks_for_all_active_agents(self, env):
         """Broadcast creates one delivery Task per active agent (excluding sender)."""
         executor, _task_store, agent_a, _agent_b, _agent_c = (
-            env["executor"], env["task_store"],
-            env["agent_a"], env["agent_b"], env["agent_c"],
+            env["executor"],
+            env["task_store"],
+            env["agent_a"],
+            env["agent_b"],
+            env["agent_c"],
         )
         queue = EventQueue()
 
@@ -360,7 +366,8 @@ class TestBroadcastSend:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
+            e
+            for e in events
             if isinstance(e, Task)
             and e.metadata
             and e.metadata.get("type") == "unicast"
@@ -383,7 +390,8 @@ class TestBroadcastSend:
 
         events = await _collect_events(queue)
         summary_tasks = [
-            e for e in events
+            e
+            for e in events
             if isinstance(e, Task)
             and e.metadata
             and e.metadata.get("type") in ("broadcast", "broadcast_summary")
@@ -407,7 +415,8 @@ class TestBroadcastSend:
 
         events = await _collect_events(queue)
         summary_tasks = [
-            e for e in events
+            e
+            for e in events
             if isinstance(e, Task)
             and e.metadata
             and e.metadata.get("type") in ("broadcast", "broadcast_summary")
@@ -421,7 +430,10 @@ class TestBroadcastSend:
     async def test_delivery_tasks_have_input_required_state(self, env):
         """Each delivery Task is in INPUT_REQUIRED state."""
         executor, agent_a, _agent_b, _agent_c = (
-            env["executor"], env["agent_a"], env["agent_b"], env["agent_c"],
+            env["executor"],
+            env["agent_a"],
+            env["agent_b"],
+            env["agent_c"],
         )
         queue = EventQueue()
 
@@ -433,9 +445,9 @@ class TestBroadcastSend:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         # Should have 2 delivery tasks (agent_b and agent_c)
@@ -445,7 +457,10 @@ class TestBroadcastSend:
     async def test_each_delivery_task_context_id_is_recipient(self, env):
         """Each delivery Task's contextId equals its recipient's agent_id."""
         executor, agent_a, agent_b, agent_c = (
-            env["executor"], env["agent_a"], env["agent_b"], env["agent_c"],
+            env["executor"],
+            env["agent_a"],
+            env["agent_b"],
+            env["agent_c"],
         )
         queue = EventQueue()
 
@@ -457,9 +472,9 @@ class TestBroadcastSend:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         recipient_ids = {t.context_id for t in delivery_tasks}
@@ -470,8 +485,11 @@ class TestBroadcastSend:
     async def test_broadcast_no_other_agents(self, env):
         """Broadcast with no other active agents produces recipientCount=0."""
         executor, store, agent_a, agent_b, agent_c = (
-            env["executor"], env["store"],
-            env["agent_a"], env["agent_b"], env["agent_c"],
+            env["executor"],
+            env["store"],
+            env["agent_a"],
+            env["agent_b"],
+            env["agent_c"],
         )
         queue = EventQueue()
 
@@ -487,9 +505,9 @@ class TestBroadcastSend:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
         assert len(delivery_tasks) == 0
 
@@ -577,7 +595,9 @@ class TestAck:
     async def test_ack_on_canceled_task_raises_error(self, env):
         """ACK on a canceled task raises an error."""
         executor, agent_a, agent_b = (
-            env["executor"], env["agent_a"], env["agent_b"],
+            env["executor"],
+            env["agent_a"],
+            env["agent_b"],
         )
         delivery_task = await self._create_unicast_task(env)
 
@@ -668,13 +688,13 @@ class TestGetTaskVisibility:
     async def test_task_indexed_by_recipient_context(self, env):
         """Delivery Task is indexed under recipient's contextId in sorted set."""
         _task_store, redis, agent_b = (
-            env["task_store"], env["redis"], env["agent_b"],
+            env["task_store"],
+            env["redis"],
+            env["agent_b"],
         )
         delivery_task = await self._create_unicast_task(env)
 
-        score = await redis.zscore(
-            f"tasks:ctx:{agent_b['agent_id']}", delivery_task.id
-        )
+        score = await redis.zscore(f"tasks:ctx:{agent_b['agent_id']}", delivery_task.id)
         assert score is not None
 
     @pytest.mark.asyncio
@@ -753,7 +773,9 @@ class TestCancelTask:
     async def test_cancel_completed_task_raises_error(self, env):
         """Cannot cancel a task that is already COMPLETED."""
         executor, agent_a, agent_b = (
-            env["executor"], env["agent_a"], env["agent_b"],
+            env["executor"],
+            env["agent_a"],
+            env["agent_b"],
         )
         delivery_task = await self._create_unicast_task(env)
 
@@ -864,9 +886,7 @@ async def tenant_env():
     await redis.aclose()
 
 
-def _make_tenant_call_context(
-    agent_id: str, tenant_id: str
-) -> ServerCallContext:
+def _make_tenant_call_context(agent_id: str, tenant_id: str) -> ServerCallContext:
     """Create a ServerCallContext with agent_id and tenant_id."""
     return ServerCallContext(
         state={"agent_id": agent_id, "tenant_id": tenant_id},
@@ -1038,9 +1058,9 @@ class TestTenantScopedBroadcast:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         recipient_ids = {t.context_id for t in delivery_tasks}
@@ -1063,18 +1083,16 @@ class TestTenantScopedBroadcast:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         for task in delivery_tasks:
             assert task.context_id != agent_a1["agent_id"]
 
     @pytest.mark.asyncio
-    async def test_broadcast_delivery_count_matches_tenant_size(
-        self, tenant_env
-    ):
+    async def test_broadcast_delivery_count_matches_tenant_size(self, tenant_env):
         """Number of delivery tasks equals (tenant agents - 1)."""
         executor = tenant_env["executor"]
         agent_a1 = tenant_env["agent_a1"]
@@ -1089,18 +1107,16 @@ class TestTenantScopedBroadcast:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         # Tenant A has 2 agents (a1, a2), so 1 delivery task (to a2)
         assert len(delivery_tasks) == 1
 
     @pytest.mark.asyncio
-    async def test_broadcast_summary_reflects_tenant_recipients(
-        self, tenant_env
-    ):
+    async def test_broadcast_summary_reflects_tenant_recipients(self, tenant_env):
         """Summary task recipientCount counts only same-tenant agents."""
         executor = tenant_env["executor"]
         agent_a1 = tenant_env["agent_a1"]
@@ -1115,7 +1131,8 @@ class TestTenantScopedBroadcast:
 
         events = await _collect_events(queue)
         summary_tasks = [
-            e for e in events
+            e
+            for e in events
             if isinstance(e, Task)
             and e.metadata
             and e.metadata.get("type") in ("broadcast", "broadcast_summary")
@@ -1126,9 +1143,7 @@ class TestTenantScopedBroadcast:
         assert summary.metadata["recipientCount"] == 1
 
     @pytest.mark.asyncio
-    async def test_tenant_b_broadcast_does_not_reach_tenant_a(
-        self, tenant_env
-    ):
+    async def test_tenant_b_broadcast_does_not_reach_tenant_a(self, tenant_env):
         """Broadcast from tenant B delivers only within tenant B."""
         executor, task_store = tenant_env["executor"], tenant_env["task_store"]
         agent_a1, agent_a2 = tenant_env["agent_a1"], tenant_env["agent_a2"]
@@ -1144,9 +1159,9 @@ class TestTenantScopedBroadcast:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         # B1 is alone in tenant B, so no delivery tasks
@@ -1176,9 +1191,9 @@ class TestTenantScopedBroadcast:
 
         events = await _collect_events(queue)
         delivery_tasks = [
-            e for e in events
-            if isinstance(e, Task)
-            and e.status.state == TaskState.input_required
+            e
+            for e in events
+            if isinstance(e, Task) and e.status.state == TaskState.input_required
         ]
 
         # A2 deregistered, so no delivery tasks
@@ -1268,7 +1283,11 @@ class TestExecutorPubSubIntegration:
         # Verify publish was called once for the recipient
         mock_pubsub.publish.assert_called_once()
         call_args = mock_pubsub.publish.call_args
-        channel = call_args[0][0] if call_args[0] else call_args[1].get("channel", call_args.kwargs.get("channel"))
+        channel = (
+            call_args[0][0]
+            if call_args[0]
+            else call_args[1].get("channel", call_args.kwargs.get("channel"))
+        )
 
         assert channel == f"inbox:{agent_b['agent_id']}"
 
@@ -1291,7 +1310,11 @@ class TestExecutorPubSubIntegration:
 
         # Get the published task_id
         call_args = mock_pubsub.publish.call_args
-        published_task_id = call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("message", call_args.kwargs.get("message"))
+        published_task_id = (
+            call_args[0][1]
+            if len(call_args[0]) > 1
+            else call_args[1].get("message", call_args.kwargs.get("message"))
+        )
 
         # Verify it's a valid task_id (string, not JSON)
         assert isinstance(published_task_id, str)
@@ -1319,9 +1342,7 @@ class TestExecutorPubSubIntegration:
         await executor.execute(context, queue)
 
         # Should have published to inbox:{agent_b} and inbox:{agent_c}
-        published_channels = [
-            call[0][0] for call in mock_pubsub.publish.call_args_list
-        ]
+        published_channels = [call[0][0] for call in mock_pubsub.publish.call_args_list]
         expected_channels = {
             f"inbox:{agent_b['agent_id']}",
             f"inbox:{agent_c['agent_id']}",
@@ -1344,9 +1365,7 @@ class TestExecutorPubSubIntegration:
         )
         await executor.execute(context, queue)
 
-        published_channels = [
-            call[0][0] for call in mock_pubsub.publish.call_args_list
-        ]
+        published_channels = [call[0][0] for call in mock_pubsub.publish.call_args_list]
 
         assert f"inbox:{agent_a['agent_id']}" not in published_channels
 

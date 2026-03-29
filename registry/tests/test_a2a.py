@@ -51,7 +51,13 @@ async def broker_client():
     await redis.aclose()
 
 
-async def _register_agent(client, name="Test Agent", description="A test agent", skills=None, api_key=_DEFAULT_API_KEY):
+async def _register_agent(
+    client,
+    name="Test Agent",
+    description="A test agent",
+    skills=None,
+    api_key=_DEFAULT_API_KEY,
+):
     """Register an agent via POST and return the response data."""
     body = {"name": name, "description": description}
     if skills is not None:
@@ -87,14 +93,17 @@ def _jsonrpc(method: str, params: dict, req_id: str | None = None) -> dict:
 
 async def _send_message(client, api_key, agent_id, destination, text="Hello"):
     """Send a unicast or broadcast message via A2A SendMessage."""
-    payload = _jsonrpc("SendMessage", {
-        "message": {
-            "messageId": str(uuid.uuid4()),
-            "role": "user",
-            "parts": [{"kind": "text", "text": text}],
-            "metadata": {"destination": destination},
+    payload = _jsonrpc(
+        "SendMessage",
+        {
+            "message": {
+                "messageId": str(uuid.uuid4()),
+                "role": "user",
+                "parts": [{"kind": "text", "text": text}],
+                "metadata": {"destination": destination},
+            },
         },
-    })
+    )
     resp = await client.post("/", json=payload, headers=_auth(api_key, agent_id))
     assert resp.status_code == 200
     data = resp.json()
@@ -125,14 +134,17 @@ async def _get_task(client, api_key, agent_id, task_id):
 
 async def _ack_task(client, api_key, agent_id, task_id, text="ack"):
     """Acknowledge a task via A2A SendMessage (multi-turn)."""
-    payload = _jsonrpc("SendMessage", {
-        "message": {
-            "messageId": str(uuid.uuid4()),
-            "role": "user",
-            "taskId": task_id,
-            "parts": [{"kind": "text", "text": text}],
+    payload = _jsonrpc(
+        "SendMessage",
+        {
+            "message": {
+                "messageId": str(uuid.uuid4()),
+                "role": "user",
+                "taskId": task_id,
+                "parts": [{"kind": "text", "text": text}],
+            },
         },
-    })
+    )
     resp = await client.post("/", json=payload, headers=_auth(api_key, agent_id))
     assert resp.status_code == 200
     data = resp.json()
@@ -180,13 +192,17 @@ class TestRegistryFlow:
         assert agent_id in agent_ids
 
         # 3. Get detail
-        resp = await client.get(f"/api/v1/agents/{agent_id}", headers=_auth(api_key, agent_id))
+        resp = await client.get(
+            f"/api/v1/agents/{agent_id}", headers=_auth(api_key, agent_id)
+        )
         assert resp.status_code == 200
         detail = resp.json()
         assert detail["name"] == "Flow Agent"
 
         # 4. Deregister
-        resp = await client.delete(f"/api/v1/agents/{agent_id}", headers=_auth(api_key, agent_id))
+        resp = await client.delete(
+            f"/api/v1/agents/{agent_id}", headers=_auth(api_key, agent_id)
+        )
         assert resp.status_code == 204
 
         # 5. Verify removed from list
@@ -206,10 +222,14 @@ class TestRegistryFlow:
         api_key = first["api_key"]
         agents = [first]
         for i in range(1, 3):
-            a = await _register_agent(client, name=f"Agent {i}", description=f"Agent {i}", api_key=api_key)
+            a = await _register_agent(
+                client, name=f"Agent {i}", description=f"Agent {i}", api_key=api_key
+            )
             agents.append(a)
 
-        resp = await client.get("/api/v1/agents", headers=_auth(api_key, agents[0]["agent_id"]))
+        resp = await client.get(
+            "/api/v1/agents", headers=_auth(api_key, agents[0]["agent_id"])
+        )
         assert resp.status_code == 200
         listed = resp.json()["agents"]
         listed_ids = {a["agent_id"] for a in listed}
@@ -258,7 +278,10 @@ class TestUnicastFlow:
             context_id=agent_b["agent_id"],
         )
         tasks = list_result.get("tasks", list_result)
-        task_ids = [t["id"] if isinstance(t, dict) else t for t in (tasks if isinstance(tasks, list) else [tasks])]
+        task_ids = [
+            t["id"] if isinstance(t, dict) else t
+            for t in (tasks if isinstance(tasks, list) else [tasks])
+        ]
         assert task_id in task_ids
 
         # 3. Agent B gets the specific task
@@ -294,15 +317,20 @@ class TestUnicastFlow:
 
         agent_a = await _register_agent(client, name="Sender")
 
-        payload = _jsonrpc("SendMessage", {
-            "message": {
-                "messageId": str(uuid.uuid4()),
-                "role": "user",
-                "parts": [{"kind": "text", "text": "Hello?"}],
-                "metadata": {"destination": "00000000-0000-4000-8000-000000000000"},
+        payload = _jsonrpc(
+            "SendMessage",
+            {
+                "message": {
+                    "messageId": str(uuid.uuid4()),
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": "Hello?"}],
+                    "metadata": {"destination": "00000000-0000-4000-8000-000000000000"},
+                },
             },
-        })
-        resp = await client.post("/", json=payload, headers=_auth(agent_a["api_key"], agent_a["agent_id"]))
+        )
+        resp = await client.post(
+            "/", json=payload, headers=_auth(agent_a["api_key"], agent_a["agent_id"])
+        )
         data = resp.json()
 
         assert "error" in data
@@ -312,14 +340,17 @@ class TestUnicastFlow:
         """A2A SendMessage without auth returns HTTP 401."""
         client = broker_client
 
-        payload = _jsonrpc("SendMessage", {
-            "message": {
-                "messageId": str(uuid.uuid4()),
-                "role": "user",
-                "parts": [{"kind": "text", "text": "No auth"}],
-                "metadata": {"destination": "some-agent"},
+        payload = _jsonrpc(
+            "SendMessage",
+            {
+                "message": {
+                    "messageId": str(uuid.uuid4()),
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": "No auth"}],
+                    "metadata": {"destination": "some-agent"},
+                },
             },
-        })
+        )
         resp = await client.post("/", json=payload)
         assert resp.status_code == 401
 
@@ -424,7 +455,9 @@ class TestCancelTaskFlow:
         task_id = result["task"]["id"]
 
         # Cancel it
-        cancel_result = await _cancel_task(client, api_key, agent_a["agent_id"], task_id)
+        cancel_result = await _cancel_task(
+            client, api_key, agent_a["agent_id"], task_id
+        )
         assert "result" in cancel_result
         assert cancel_result["result"]["task"]["status"]["state"] == "canceled"
 
@@ -445,7 +478,9 @@ class TestCancelTaskFlow:
         await _ack_task(client, api_key, agent_b["agent_id"], task_id)
 
         # Try to cancel → should fail
-        cancel_result = await _cancel_task(client, api_key, agent_a["agent_id"], task_id)
+        cancel_result = await _cancel_task(
+            client, api_key, agent_a["agent_id"], task_id
+        )
         assert "error" in cancel_result
 
     @pytest.mark.asyncio
@@ -463,7 +498,9 @@ class TestCancelTaskFlow:
         task_id = result["task"]["id"]
 
         # Recipient tries to cancel → should fail
-        cancel_result = await _cancel_task(client, api_key, agent_b["agent_id"], task_id)
+        cancel_result = await _cancel_task(
+            client, api_key, agent_b["agent_id"], task_id
+        )
         assert "error" in cancel_result
 
     @pytest.mark.asyncio
@@ -506,7 +543,9 @@ class TestCancelTaskFlow:
         _agent_c = await _register_agent(client, name="Recipient C", api_key=api_key)
 
         # Broadcast
-        result = await _send_message(client, api_key, agent_a["agent_id"], destination="*")
+        result = await _send_message(
+            client, api_key, agent_a["agent_id"], destination="*"
+        )
         summary = result["task"]
 
         # Get delivery task IDs from summary artifact

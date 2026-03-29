@@ -17,7 +17,9 @@ async def register_agent(
         body["skills"] = skills
     headers = {"Authorization": f"Bearer {api_key}"}
     async with httpx.AsyncClient() as client:
-        resp = await client.post(f"{broker_url}/api/v1/agents", json=body, headers=headers)
+        resp = await client.post(
+            f"{broker_url}/api/v1/agents", json=body, headers=headers
+        )
         resp.raise_for_status()
         return resp.json()
 
