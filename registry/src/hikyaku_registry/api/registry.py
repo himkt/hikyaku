@@ -55,7 +55,7 @@ async def get_agent_detail(
     agent_id: str,
     auth: tuple = Depends(get_authenticated_agent),
     store: RegistryStore = Depends(get_registry_store),
-) -> JSONResponse | AgentRecord:
+):
     _caller_id, tenant_id = auth
 
     agent = await store.get_agent(agent_id)
@@ -90,7 +90,7 @@ async def deregister_agent(
     agent_id: str,
     auth: tuple = Depends(get_authenticated_agent),
     store: RegistryStore = Depends(get_registry_store),
-) -> Response | JSONResponse:
+):
     caller_id, _tenant_id = auth
 
     agent = await store.get_agent(agent_id)
