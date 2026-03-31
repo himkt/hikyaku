@@ -125,7 +125,7 @@ The `hikyaku-mcp` package (`mcp-server/`) is a transparent proxy that exposes th
 | `subscribe.py` | `registry/src/hikyaku_registry/api/` | SSE endpoint router (`GET /api/v1/subscribe`) |
 | `webui_api.py` | `registry/src/hikyaku_registry/` | WebUI API router (`/ui/api/*`) — auth config, key management, agents, inbox, sent, send |
 | `admin/` | Project root | WebUI SPA (Vite + React + TypeScript + Tailwind CSS) |
-| `cli.py` | `client/src/hikyaku_client/` | click group (--json only) + subcommands (--agent-id per subcommand) |
+| `cli.py` | `client/src/hikyaku_client/` | click group (--json only) + subcommands (most require --agent-id) |
 | `api.py` | `client/src/hikyaku_client/` | Helper functions (httpx / a2a-sdk) |
 | `output.py` | `client/src/hikyaku_client/` | Output formatting (tables + JSON) |
 | `server.py` | `mcp-server/src/hikyaku_mcp/` | MCP server entry point + tool definitions |

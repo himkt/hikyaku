@@ -365,8 +365,8 @@ class TestRegisterTool:
             )
 
     @pytest.mark.asyncio
-    async def test_register_output_excludes_api_key(self, mock_forwarder):
-        """register tool result contains agent_id but api_key is available for call_tool to strip."""
+    async def test_register_output_includes_api_key_for_call_tool(self, mock_forwarder):
+        """handle_register returns agent_id and api_key so call_tool can later strip api_key."""
         mock_forwarder.register = AsyncMock(
             return_value={"agent_id": "new-agent", "api_key": "hky_secret", "name": "test"}
         )
