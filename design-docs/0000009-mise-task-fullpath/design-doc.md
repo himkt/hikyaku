@@ -1,7 +1,7 @@
 # mise Task Full-Path Specification
 
 **Status**: Approved
-**Progress**: 0/7 tasks complete
+**Progress**: 2/7 tasks complete
 **Last Updated**: 2026-03-30
 
 ## Overview
@@ -172,8 +172,8 @@ Key changes for `.claude/CLAUDE.md`:
 
 ### Step 1: Update mise.toml monorepo config
 
-- [ ] Add `mcp-server` to `monorepo.config_roots` in root `mise.toml` <!-- completed: -->
-- [ ] Verify `mise tasks --all` shows mcp-server tasks (`//mcp-server:test`, etc.) <!-- completed: -->
+- [x] Add `mcp-server` to `monorepo.config_roots` in root `mise.toml` <!-- completed: 2026-03-31T14:39 -->
+- [x] Verify `mise tasks --all` shows mcp-server tasks (`//mcp-server:test`, etc.) <!-- completed: 2026-03-31T14:39 -->
 
 > After verification, proceed to Steps 3-4 (documentation updates) before Step 2 (settings.json), following the project rule that documentation is updated first.
 

@@ -5,6 +5,7 @@ config_roots = [
   "registry",
   "client",
   "admin",
+  "mcp-server",
 ]
 
 [tasks.lint]
