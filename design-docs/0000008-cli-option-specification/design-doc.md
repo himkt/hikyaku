@@ -1,8 +1,8 @@
 # CLI & MCP Server Option Specification Refactoring
 
-**Status**: Approved
-**Progress**: 2/14 tasks complete
-**Last Updated**: 2026-03-30
+**Status**: Complete
+**Progress**: 14/14 tasks complete
+**Last Updated**: 2026-03-31
 
 ## Overview
 
@@ -232,30 +232,30 @@ elif name == "register":
 
 ### Step 2: Refactor CLI Global Options
 
-- [ ] Remove `--url`, `--api-key`, `--agent-id` from `cli()` group; read `url` and `api_key` from `os.environ` in `cli()`; keep only `--json` as a click option <!-- completed: -->
-- [ ] Rename `_require_auth` to `_require_api_key`; remove `agent_id` check (now handled by click `required=True` on each subcommand) <!-- completed: -->
-- [ ] Update `register` command error message to reference `HIKYAKU_API_KEY` env var <!-- completed: -->
+- [x] Remove `--url`, `--api-key`, `--agent-id` from `cli()` group; read `url` and `api_key` from `os.environ` in `cli()`; keep only `--json` as a click option <!-- completed: 2026-03-31T11:48 -->
+- [x] Rename `_require_auth` to `_require_api_key`; remove `agent_id` check (now handled by click `required=True` on each subcommand) <!-- completed: 2026-03-31T11:48 -->
+- [x] Update `register` command error message to reference `HIKYAKU_API_KEY` env var <!-- completed: 2026-03-31T11:48 -->
 
 ### Step 3: Move `--agent-id` to Subcommands
 
-- [ ] Add `@click.option("--agent-id", required=True, help="Agent ID")` to each subcommand: `send`, `broadcast`, `poll`, `ack`, `cancel`, `get-task`, `agents`, `deregister` <!-- completed: -->
-- [ ] Update each subcommand to use the local `agent_id` parameter instead of `ctx.obj["agent_id"]` <!-- completed: -->
+- [x] Add `@click.option("--agent-id", required=True, help="Agent ID")` to each subcommand: `send`, `broadcast`, `poll`, `ack`, `cancel`, `get-task`, `agents`, `deregister` <!-- completed: 2026-03-31T11:48 -->
+- [x] Update each subcommand to use the local `agent_id` parameter instead of `ctx.obj["agent_id"]` <!-- completed: 2026-03-31T11:48 -->
 
 ### Step 4: Sanitize Register Output
 
-- [ ] Update `output.format_register` to remove API key display and `export HIKYAKU_API_KEY` line; keep only `agent_id`, `name`, and `export HIKYAKU_AGENT_ID` <!-- completed: -->
-- [ ] Strip `api_key` from JSON output in `register` command before calling `format_json` <!-- completed: -->
+- [x] Update `output.format_register` to remove API key display and `export HIKYAKU_API_KEY` line; keep only `agent_id`, `name`, and `export HIKYAKU_AGENT_ID` <!-- completed: 2026-03-31T11:57 -->
+- [x] Strip `api_key` from JSON output in `register` command before calling `format_json` <!-- completed: 2026-03-31T11:57 -->
 
 ### Step 5: Refactor MCP Server
 
-- [ ] Remove `api_key` parameter from `RegistryForwarder.register()`; always use `self._api_key` with `Authorization` header <!-- completed: -->
-- [ ] Remove `api_key` from `register` tool's `inputSchema` and `handle_register()` signature in `server.py` <!-- completed: -->
-- [ ] Strip `api_key` from `register` tool output in `call_tool()` <!-- completed: -->
+- [x] Remove `api_key` parameter from `RegistryForwarder.register()`; always use `self._api_key` with `Authorization` header <!-- completed: 2026-03-31T11:57 -->
+- [x] Remove `api_key` from `register` tool's `inputSchema` and `handle_register()` signature in `server.py` <!-- completed: 2026-03-31T11:57 -->
+- [x] Strip `api_key` from `register` tool output in `call_tool()` <!-- completed: 2026-03-31T11:57 -->
 
 ### Step 6: Update Tests
 
-- [ ] Rewrite CLI tests in `tests/test_cli.py` and `tests/test_cli_register.py`: replace all `--api-key` and `--url` CLI args with `env={}` on `runner.invoke`; replace global `--agent-id` with subcommand-level `--agent-id`; update `_auth_opts()` helper in both files; add tests for missing env var errors; verify API key is absent from register output <!-- completed: -->
-- [ ] Rewrite MCP server tests in `tests/test_server.py`: remove `api_key` parameter from `handle_register` calls and `register` tool mock assertions; add test that register output excludes `api_key` <!-- completed: -->
+- [x] Rewrite CLI tests in `tests/test_cli.py` and `tests/test_cli_register.py`: replace all `--api-key` and `--url` CLI args with `env={}` on `runner.invoke`; replace global `--agent-id` with subcommand-level `--agent-id`; update `_auth_opts()` helper in both files; add tests for missing env var errors; verify API key is absent from register output <!-- completed: 2026-03-31T11:57 -->
+- [x] Rewrite MCP server tests in `tests/test_server.py`: remove `api_key` parameter from `handle_register` calls and `register` tool mock assertions; add test that register output excludes `api_key` <!-- completed: 2026-03-31T11:57 -->
 
 ---
 
@@ -264,3 +264,4 @@ elif name == "register":
 | Date | Changes |
 |------|---------|
 | 2026-03-30 | Initial draft |
+| 2026-03-31 | Implementation complete |
