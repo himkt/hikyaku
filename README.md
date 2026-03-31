@@ -21,28 +21,49 @@ Hikyaku enables ephemeral agents -- such as Claude Code sessions, CI/CD runners,
 ## Architecture
 
 ```
-     Tenant X (shared API key)              +---------------------------+
-    +- - - - - - - - - - - - -+             |        Broker             |
-                                            |                           |
-    | +-----------+            |            |  +-----------------+      |
-      |  Agent A  | SendMessage             |  | A2A Server      |      |
-    | | (sender)  |--------------------------->| (tenant-scoped) |      |
-      +-----------+ Authorization:          |  +-------+---------+      |
-    |               Bearer <api_key>        |          |                |
-                    X-Agent-Id: <id>        |          v                |
-    | +-----------+            |            |  +-----------------+      |
-      |  Agent B  | ListTasks               |  | Redis           |      |
-    | |(recipient)|<------------------------   | Agent Store     |      |
-      +-----------+            |            |  | Task Store      |      |
-    +- - - - - - - - - - - - -+            |  | Tenant Sets     |      |
-                                            |  +-----------------+      |
-     Tenant Y (different API key)           +---------------------------+
-    +- - - - - - - - - - - - -+
-      +-----------+
-    | |  Agent C  | (isolated) |
-      | (no access|
-    | +-----------+            |
-    +- - - - - - - - - - - - -+
+     Tenant X (shared API key)            +----------------------------+
+    + - - - - - - - - - - - - +           |          Broker            |
+                                          |                            |
+    | +-------------+         |           |  +--------------------+    |
+      |  Agent A     | SendMessage        |  | A2A Server         |    |
+    | |  (sender)    |---------------------> | (tenant-scoped)    |    |
+      +-------------+ Authorization:      |  +--------+-----------+    |
+    |                  Bearer <api_key>   |           |                |
+                       X-Agent-Id: <id>   |           v                |
+    | +-------------+         |           |  +--------------------+    |
+      |  Agent B     | ListTasks          |  | Redis              |    |
+    | | (recipient)  |<-------------------+  | +----------------+ |    |
+      +-------------+         |           |  | | Agent Store    | |    |
+    |                                     |  | | Task Store     | |    |
+     - - - - - - - - - - - - -            |  | | Tenant Sets    | |    |
+                                          |  | | Pub/Sub Chans  | |    |
+     Tenant Y (different API key)         |  | +----------------+ |    |
+    + - - - - - - - - - - - - +           |  +--------------------+    |
+      +-------------+                     |                            |
+    | |  Agent C     | (isolated) |       |  +--------------------+    |
+      | (discovery)  |                    |  | SSE Endpoint       |    |
+    | +-------------+            |        |  | /api/v1/subscribe  |    |
+     - - - - - - - - - - - - -            |  +--------------------+    |
+                                          +----------------------------+
+
+  +---------------+  MCP tools   +--------------------------------------+
+  | Claude Code   |------------->|  hikyaku-mcp (transparent proxy)     |
+  |  (agent)      |  poll, send, |                                      |
+  |               |  ack, ...    |  +----------+   +----------------+   |
+  +---------------+              |  | Buffer   |<--| SSE Client     |   |
+                                 |  | (Queue)  |   | (background)   |   |
+                                 |  +----+-----+   +-------+--------+   |
+                                 |       | poll            | SSE        |
+                                 |  +----+-----+   +-------+--------+   |
+                                 |  | Registry  |   | /api/v1/       |  |
+                                 |  | Forwarder |   | subscribe      |  |
+                                 |  +----+-----+   +-------+--------+   |
+                                 +-------+------------------+-----------+
+                                         | REST/JSON-RPC    | SSE
+                                         v                  v
+                                 +--------------------------------------+
+                                 |  hikyaku-registry (broker)           |
+                                 +--------------------------------------+
 ```
 
 Key design decisions:
@@ -67,8 +88,7 @@ Key design decisions:
 ### Start the Broker Server
 
 ```bash
-cd registry
-uv run uvicorn hikyaku_registry.main:app
+mise //registry:dev
 ```
 
 The broker will be available at `http://localhost:8000`.
@@ -84,61 +104,61 @@ uv tool install .
 
 Log into the WebUI at `http://localhost:8000/ui/` via Auth0, then create an API key from the key management page. The raw key is shown only once -- save it securely.
 
-### Register an Agent
-
-```bash
-hikyaku --api-key "hky_..." register --name "my-agent" --description "A coding assistant"
-```
-
-Or via environment variable (recommended):
-
-```bash
-export HIKYAKU_API_KEY="hky_..."
-hikyaku register --name "my-agent" --description "A coding assistant"
-```
-
-Registration always requires a valid API key created through the WebUI. The `--api-key` flag (or `HIKYAKU_API_KEY` env var) is mandatory.
-
 ### Set Credentials
 
 ```bash
 export HIKYAKU_API_KEY="hky_..."
-export HIKYAKU_AGENT_ID="<your-agent-id>"
+export HIKYAKU_URL="http://localhost:8000"   # optional, defaults to http://localhost:8000
 ```
+
+### Register an Agent
+
+```bash
+hikyaku register --name "my-agent" --description "A coding assistant"
+```
+
+Save the returned `agent_id` for subsequent commands. Registration always requires a valid `HIKYAKU_API_KEY`.
 
 ### Send a Message
 
 ```bash
-hikyaku send --to <recipient-agent-id> --text "Hello from my agent"
+hikyaku send --agent-id <your-agent-id> --to <recipient-agent-id> --text "Hello from my agent"
 ```
 
 ### Poll for Messages
 
 ```bash
-hikyaku poll
+hikyaku poll --agent-id <your-agent-id>
 ```
 
 ### Acknowledge a Message
 
 ```bash
-hikyaku ack --task-id <task-id>
+hikyaku ack --agent-id <your-agent-id> --task-id <task-id>
 ```
 
 ## CLI Usage
 
-All commands accept `--url` (default: `http://localhost:8000`), `--api-key`, `--agent-id`, and `--json` flags. Credentials can also be set via environment variables (`HIKYAKU_URL`, `HIKYAKU_API_KEY`, `HIKYAKU_AGENT_ID`).
+Credentials are set via environment variables:
 
-| Command | Description |
-|---|---|
-| `hikyaku register` | Register a new agent; `--api-key` (or `HIKYAKU_API_KEY`) is always required |
-| `hikyaku send` | Send a unicast message to another agent in the same tenant |
-| `hikyaku broadcast` | Broadcast a message to all agents in the same tenant |
-| `hikyaku poll` | Poll inbox for incoming messages |
-| `hikyaku ack` | Acknowledge receipt of a message |
-| `hikyaku cancel` | Cancel (retract) a sent message before it is acknowledged |
-| `hikyaku get-task` | Get details of a specific task/message |
-| `hikyaku agents` | List agents in the tenant or get detail for a specific agent |
-| `hikyaku deregister` | Deregister this agent from the broker |
+| Variable | Required | Description |
+|---|---|---|
+| `HIKYAKU_API_KEY` | Yes | API key for tenant authentication |
+| `HIKYAKU_URL` | No | Broker URL (default: `http://localhost:8000`) |
+
+The `--agent-id` option is a per-subcommand option required by most commands. The global `--json` flag enables JSON output.
+
+| Command | `--agent-id` | Description |
+|---|---|---|
+| `hikyaku register` | Not required | Register a new agent; returns an agent ID |
+| `hikyaku send` | Required | Send a unicast message to another agent in the same tenant |
+| `hikyaku broadcast` | Required | Broadcast a message to all agents in the same tenant |
+| `hikyaku poll` | Required | Poll inbox for incoming messages |
+| `hikyaku ack` | Required | Acknowledge receipt of a message |
+| `hikyaku cancel` | Required | Cancel (retract) a sent message before it is acknowledged |
+| `hikyaku get-task` | Required | Get details of a specific task/message |
+| `hikyaku agents` | Required | List agents in the tenant or get detail for a specific agent |
+| `hikyaku deregister` | Required | Deregister this agent from the broker |
 
 ## API Overview
 
@@ -284,6 +304,7 @@ hikyaku/
       data-model.md
       webui-api.md
       streaming-subscribe.md
+      cli-options.md
   ARCHITECTURE.md         # System architecture and design decisions
 ```
 
@@ -299,11 +320,15 @@ uv sync
 
 # Run registry tests
 cd registry
-uv run pytest tests/ -v
+mise test
 
 # Run client tests
 cd client
-uv run pytest tests/ -v
+mise test
+
+# Run MCP server tests
+cd mcp-server
+mise test
 ```
 
 ## License
