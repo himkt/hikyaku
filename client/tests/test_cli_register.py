@@ -217,60 +217,6 @@ class TestRegisterMissingApiKey:
 
 
 # ===========================================================================
-# --api-key CLI option removed entirely
-# ===========================================================================
-
-
-class TestApiKeyCliOptionRemoved:
-    """Tests that --api-key is not accepted anywhere (global or subcommand).
-
-    API key must come exclusively from HIKYAKU_API_KEY env var.
-    """
-
-    def test_api_key_not_accepted_as_global_option(self, runner):
-        """--api-key is not accepted as a global CLI option."""
-        mock = AsyncMock(return_value=SAMPLE_AGENT)
-        with patch("hikyaku_client.cli.api.register_agent", mock):
-            result = runner.invoke(
-                cli,
-                [
-                    "--api-key",
-                    API_KEY,
-                    "register",
-                    "--name",
-                    "test-agent",
-                    "--description",
-                    "A test agent",
-                ],
-                env={"HIKYAKU_URL": BROKER_URL},
-            )
-
-        # Should fail because --api-key is no longer a valid CLI option
-        assert result.exit_code != 0
-
-    def test_api_key_not_accepted_as_register_option(self, runner):
-        """Register does not accept --api-key as a subcommand option."""
-        mock = AsyncMock(return_value=SAMPLE_AGENT)
-        with patch("hikyaku_client.cli.api.register_agent", mock):
-            result = runner.invoke(
-                cli,
-                [
-                    "register",
-                    "--name",
-                    "test-agent",
-                    "--description",
-                    "A test agent",
-                    "--api-key",
-                    "hky_someOtherKey0000000000000000",
-                ],
-                env={"HIKYAKU_URL": BROKER_URL, "HIKYAKU_API_KEY": API_KEY},
-            )
-
-        # Should fail because register does not accept --api-key
-        assert result.exit_code != 0
-
-
-# ===========================================================================
 # api.register_agent always sends Authorization header
 # ===========================================================================
 

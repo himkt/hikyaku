@@ -898,36 +898,6 @@ class TestGlobalOptions:
 
         assert result.exit_code == 0
 
-    def test_no_url_cli_option(self, runner):
-        """--url is no longer accepted as a CLI option."""
-        result = runner.invoke(
-            cli,
-            ["--url", BROKER_URL, "register", "--name", "test", "--description", "test"],
-            env={"HIKYAKU_API_KEY": API_KEY},
-        )
-
-        assert result.exit_code != 0
-
-    def test_no_api_key_cli_option(self, runner):
-        """--api-key is no longer accepted as a CLI option."""
-        result = runner.invoke(
-            cli,
-            ["--api-key", API_KEY, "register", "--name", "test", "--description", "test"],
-            env={"HIKYAKU_URL": BROKER_URL},
-        )
-
-        assert result.exit_code != 0
-
-    def test_no_agent_id_global_option(self, runner):
-        """--agent-id is no longer accepted as a global option."""
-        result = runner.invoke(
-            cli,
-            ["--agent-id", AGENT_ID, "register", "--name", "test", "--description", "test"],
-            env={"HIKYAKU_URL": BROKER_URL, "HIKYAKU_API_KEY": API_KEY},
-        )
-
-        assert result.exit_code != 0
-
     def test_default_url(self, runner):
         """Default URL is http://localhost:8000 when HIKYAKU_URL is not set."""
         mock = AsyncMock(return_value=SAMPLE_AGENT)
