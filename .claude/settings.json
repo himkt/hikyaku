@@ -1,6 +1,22 @@
 {
   "permissions": {
     "allow": [
+      "Bash(mise //:lint)",
+      "Bash(mise //:lint *)",
+      "Bash(mise //:format)",
+      "Bash(mise //:format *)",
+      "Bash(mise //:typecheck)",
+      "Bash(mise //:typecheck *)",
+      "Bash(mise //admin:*)",
+      "Bash(mise //client:*)",
+      "Bash(mise //mcp-server:*)",
+      "Bash(mise //registry:*)"
+    ],
+    "deny": [
+      "Bash(uv run pytest *)",
+      "Bash(uv run python -m *)",
+      "Bash(uv run --package *)",
+      "Bash(mise run *)",
       "Bash(mise lint)",
       "Bash(mise lint *)",
       "Bash(mise format)",
@@ -8,13 +24,11 @@
       "Bash(mise typecheck)",
       "Bash(mise typecheck *)",
       "Bash(mise test)",
-      "Bash(mise test *)"
-    ],
-    "deny": [
-      "Bash(uv run pytest *)",
-      "Bash(uv run python -m *)",
-      "Bash(uv run --package *)",
-      "Bash(mise run *)"
+      "Bash(mise test *)",
+      "Bash(mise dev)",
+      "Bash(mise dev *)",
+      "Bash(mise build)",
+      "Bash(mise build *)"
     ]
   },
   "enabledPlugins": {}

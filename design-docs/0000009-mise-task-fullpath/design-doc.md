@@ -1,7 +1,7 @@
 # mise Task Full-Path Specification
 
 **Status**: Approved
-**Progress**: 5/7 tasks complete
+**Progress**: 7/7 tasks complete
 **Last Updated**: 2026-03-30
 
 ## Overview
@@ -181,8 +181,8 @@ Key changes for `.claude/CLAUDE.md`:
 
 ### Step 2: Update .claude/settings.json
 
-- [ ] Replace allow list with package-level full-path wildcard patterns <!-- completed: -->
-- [ ] Add short-form task names (`mise test`, `mise lint`, etc.) to deny list <!-- completed: -->
+- [x] Replace allow list with package-level full-path wildcard patterns <!-- completed: 2026-03-31T14:52 -->
+- [x] Add short-form task names (`mise test`, `mise lint`, etc.) to deny list <!-- completed: 2026-03-31T14:52 -->
 
 ### Step 3: Update .claude/rules/commands.md
 
