@@ -125,7 +125,7 @@ The `hikyaku-mcp` package (`mcp-server/`) is a transparent proxy that exposes th
 | `subscribe.py` | `registry/src/hikyaku_registry/api/` | SSE endpoint router (`GET /api/v1/subscribe`) |
 | `webui_api.py` | `registry/src/hikyaku_registry/` | WebUI API router (`/ui/api/*`) — auth config, key management, agents, inbox, sent, send |
 | `admin/` | Project root | WebUI SPA (Vite + React + TypeScript + Tailwind CSS) |
-| `cli.py` | `client/src/hikyaku_client/` | click group + subcommands |
+| `cli.py` | `client/src/hikyaku_client/` | click group (--json only) + subcommands (--agent-id per subcommand) |
 | `api.py` | `client/src/hikyaku_client/` | Helper functions (httpx / a2a-sdk) |
 | `output.py` | `client/src/hikyaku_client/` | Output formatting (tables + JSON) |
 | `server.py` | `mcp-server/src/hikyaku_mcp/` | MCP server entry point + tool definitions |
@@ -180,6 +180,19 @@ fastapi_app.include_router(registry_router, prefix="/api/v1")
 a2a_app = A2AStarletteApplication(agent_card=broker_card, http_handler=handler)
 fastapi_app.mount("/", a2a_app.build())
 ```
+
+### CLI Option Sources
+
+Each CLI parameter has exactly one input source:
+
+| Parameter | CLI (`client/`) | MCP Server (`mcp-server/`) |
+|---|---|---|
+| API Key | `HIKYAKU_API_KEY` env var | `HIKYAKU_API_KEY` env var |
+| Broker URL | `HIKYAKU_URL` env var (default: `http://localhost:8000`) | `HIKYAKU_URL` env var (required) |
+| Agent ID | `--agent-id` subcommand option | `HIKYAKU_AGENT_ID` env var |
+| JSON output | `--json` global flag | N/A |
+
+API keys and broker URL use environment variables only to prevent secrets from appearing in shell history. Agent ID is a CLI argument because it's an operational parameter that changes per invocation.
 
 ## Auth0 Integration
 

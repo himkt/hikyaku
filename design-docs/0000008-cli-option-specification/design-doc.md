@@ -1,7 +1,7 @@
 # CLI & MCP Server Option Specification Refactoring
 
 **Status**: Approved
-**Progress**: 0/14 tasks complete
+**Progress**: 2/14 tasks complete
 **Last Updated**: 2026-03-30
 
 ## Overview
@@ -227,8 +227,8 @@ elif name == "register":
 
 ### Step 1: Update Documentation
 
-- [ ] Update `ARCHITECTURE.md` with new option specification <!-- completed: -->
-- [ ] Update `docs/` with CLI usage changes (env var setup, removed options) <!-- completed: -->
+- [x] Update `ARCHITECTURE.md` with new option specification <!-- completed: 2026-03-31T10:00 -->
+- [x] Update `docs/` with CLI usage changes (env var setup, removed options) <!-- completed: 2026-03-31T10:00 -->
 
 ### Step 2: Refactor CLI Global Options
 
